@@ -1,0 +1,104 @@
+Coastal Act Team - 4/25/2020
+
+Developer:    Beheen Trimble - NOAA Affiliate <beheen.m.trimble@noaa.gov>
+
+Contributors: Saeed Moghimi  - NOAA Affiliate <saeed.moghimi@noaa.gov>
+              Andre Van der Westhuysen - NOAA Affiliate <andre.vanderwesthuysen@noaa.gov>
+              Ali Abdolali   - NOAA Affiliate <ali.abdolali@noaa.gov>
+
+Google Drive: https://drive.google.com/open?id=17x2E6kGo9s5xejh_jUMprsaNdzk3-_pauv1LZAt70Nw          Edit version
+              https://drive.google.com/drive/u/0/folders/1JI-7zOA1hXSt38MnuwjeFCgPo-ZW8H-7           View version
+
+ 
+This is a brain storm document about the run-time work flow of executing NEMS.x
+
+1) Original work flow -- https://drive.google.com/drive/u/0/folders/1JI-7zOA1hXSt38MnuwjeFCgPo-ZW8H-7           
+
+2) Original scripts   -- https://github.com/moghimis/cpl_tools 
+
+3) User stories about running coupled models with NEMS to find the <RUN_DIR> unique path
+
+  Happy path use case:
+  *******************
+  on this date we want to run NEMS.x in run-dir for event-x with components=comp1, comp2, ...
+      date - depends on date-time
+      NEMS.x - depends on components, model_configure, nems.configure
+      run-dir -  must be a unique name, depends on event-x, components, model scenarios, date-time ???  
+
+  Other use case :
+  ***************
+  on this day we want to run NEMS.x for more than one event ... [Y| N]
+  on this day we want to run NEMS.x for one event with a different model combination 
+      -  a subset of models
+  on this  day we want to run NEMS.x for more than one event with a different model combination. [Y| N]
+  on this  day we want to run NEMS.x for an event with a different model scenario, for more than one model
+      - multiple runs with the same model components for the same event - to use for ensemble modeling.
+
+4) Model scenarios runs as relates to the final product.
+
+
+5) Ambiguous  
+   a) Where is the startup location(i.e. is script dir)
+   b) where and who changes the contents of nems.configure, model_configure, nsem.job
+   c) egg or chicken? while programming, get this feeling - why?
+
+
+6) Schematic of work flow - 
+   
+   Assumptions: no hard coded path, user expected to start at this dir if building and installing,
+                override NEMS.x
+
+   Questions: 1) where the start_wrkflow should be?
+              2) if two steps (build/install) do we need copy of start_wrkflow in RUN_DIR?
+              3) a  copy of build.sh and install.sh to be produced in both dirs?
+              4) is user module constant?
+              5) no room for nems.job
+
+   PRJ_DIR (a.k.a BUILD_DIR) is expected to be where at least this structure exists:
+
+   parm/                      scripts/                   source/             exec/
+     |--- nems.cfg               |--- build1.sh             |--- NEMS          |--- NEMS.x   
+     |--- model_cfg              |--- pyvenv.sh             |--- MODEL1/
+     |--- module.usr             |--- start_wrkflw.py       |--- MODEL2/
+     |                           |---                       |--- MODELn/
+
+
+   However, for portability, by DEFAULT the user's current working directory is set in the build script as such:
+   PRJ_DIR = BUILD_DIR = os.getcwd()
+   SRC_DIR = BUILD_DIR + 'source'
+   SCR_DIR = BUILD_DIR + 'scripts'
+
+
+   Assumptions: no hard coded path, user expected to start at this dir if only installing a built system,
+
+   Questions: 1) What does install.sh do? 2) name job1 after run1? 3) rename NEMS.x per run?
+              3) rename nems.cfg, model_cfg? 4) 
+
+   RUN_DIR (a.k.a. INSTALL_DIR) is expected to be where at least this structure exists:
+
+   jobs/              scripts/                  model_data/                parm/              exec/
+     |--- nsem.job       |--- start_wrkflw.py        |--- run1               |--- nems.cfg      |--- NEMS.x 
+     |--- job2           |--- install.sh             |     |--- data1        |--- model_cfg                                
+                                                     |            |--- atm
+                                                     |            |--- adc
+                                                     |            |--- ww3
+                                                     |            |--- nwm
+                                                     |                  |--- namelist
+                                                     |                  |--- inputfiles                                                          
+                                                     |
+                                                     |--- run2
+
+
+
+
+7) Files:
+   nsem.job  --> script
+   model_configure --> manual
+   nems.configure  --> manual
+
+
+8) Paths
+   ROOTDIR vs. RUNDIR, SCRDIR, SRCDIR, DOCDIR,  ECFDIR, FIXDIR, JOBDIR, STARTDIR
+
+
+

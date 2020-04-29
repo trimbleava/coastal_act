@@ -1,0 +1,8 @@
+Coastal Act Team - 4/28/2020
+
+To run this script:
+
+conda activate /scratch2/COASTAL/coastal/save/NAMED_STORMS/PYTHON_ENVS/nems_venv3.7
+./start_wrkflw.py --help
+
+
