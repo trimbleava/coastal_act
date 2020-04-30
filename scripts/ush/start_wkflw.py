@@ -11,11 +11,11 @@ from color import Color, Formatting, Base, ANSI_Compatible
 
 
 # globals
-PRJ_DIR = BUILD_DIR = os. getcwd() 
+PRJ_DIR = os. getcwd() 
 SOURCE = 'source'
 SCRIPT = 'scripts'
 
-RUN_DIR = INSTALL_DIR = os.getcwd()
+RUN_DIR = os.getcwd()
 
 
 def now(frmt=1):
@@ -47,8 +47,8 @@ def get_script_dir(dir):
     return os.path.join(os.path.abspath(dir),SCRIPT) 
 
 
-def get_user_module(srcdir, node, module_name):
-    f = os.path.join(srcdir,'NEMS/modulefiles/', node, module_name)
+def get_user_module(srcdir, node, user_module):
+    f = os.path.join(srcdir,'NEMS/modulefiles/', node, user_module)
     if os.path.isfile(f):
         return f
     return None
@@ -276,10 +276,9 @@ class NEMSRun:
 
 
 class NEMSBuild:
-    """ This class creates a build script and copies the file
-        into BUILD_DIR, the same level as NEMS source location.
-        This is to build the couple system at a later time.Then
-        runs the script to compile the system.
+    """ This class creates a build script and copies the build file
+        into PRJ_DIR, the same level as NEMS source location.
+        Then runs the script to compile the system.
 
         It doesn't check for for the correctness of NEMS dir.
         It assumes all model's source are in same level of NEMS.
@@ -295,6 +294,10 @@ class NEMSBuild:
         lines = """#!/bin/bash\n
 # Description : Script to compile NSEModel NEMS application
 # Date        : {}\n
+# Developer   : beheen.m.trimble@noaa.gov
+# Contributors: saeed.moghimi@noaa.gov
+#               ali.abdolali@noaa.gov
+#               andre.vanderwesthuysen@noaa.gov
 # load modules
 source modulefiles/{}/{}\n   
 cd NEMS\n""".format(now(2), self.node.lower(), self.module)
@@ -313,7 +316,7 @@ cd NEMS\n""".format(now(2), self.node.lower(), self.module)
             lines += model.upper() + ' '
         lines = lines[:-1] + '"\n'
 
-        p = os.path.join(BUILD_DIR,'build.sh')
+        p = os.path.join(PRJ_DIR,'build.sh')
 
         with open(p, 'w') as fptr:
             fptr.write(lines)
@@ -325,12 +328,12 @@ cd NEMS\n""".format(now(2), self.node.lower(), self.module)
 
         # save 
         self.build_script = p 
-
+       
  
     def build_nems_app(self):
 
         try:
-            subprocess.run(['./build.sh'], cwd=BUILD_DIR, check=True)
+            subprocess.run(['./build.sh'], cwd=PRJ_DIR, check=True)
         except subprocess.CalledProcessError as err:
             print('Error in executing build.sh: ', err)
 
@@ -408,8 +411,8 @@ if __name__ == '__main__':
     usage = Color.F_Blue + "%s\n"  %prog
     usage += Color.F_Red
     usage += "       %s --help | -h \n"  %prog
-    usage += "       %s -b <BUILD_DIR> -i <INSTALL_DIR>\n" %(prog)
-    usage += "       %s --build <BUILD_DIR> --install <INSTALL_DIR>\n" %(prog)
+    usage += "       %s -n <node> -e <event> -u <user_module> -s <run_name> -m <model1,model2,...> -b <prj_dir> -i <run_dir>\n" %(prog)
+    usage += "       %s --build <prj_dir> --install <run_dir>\n" %(prog)
     usage += Color.F_Default 
 
     desc = '''This script builds one or more coupled models with NEMS and/or installs the system into a pre-defined location, ready to run.\n'''
@@ -417,47 +420,44 @@ if __name__ == '__main__':
                                      formatter_class=BlankLinesHelpFormatter,
                                      description=desc, epilog='\n')
 
-    parser.add_argument('-b', '--build', dest='build_dir', type=str, default=BUILD_DIR,  
-                        help='''Compiles, links, and creates libraries from the models source files using the NEMS coupler. Location of the coupled system could be provided by the user, as long as the specified location complies with the expected structure. The default build directory is {}\n'''.format(BUILD_DIR)) 
+    parser.add_argument('-b', '--build', dest='prj_dir', type=str, default=PRJ_DIR,  
+                        help='''Compiles, links, and creates libraries from the models source files using the NEMS coupler. Location of the coupled system could be provided by the user, as long as the specified location complies with the expected structure. The default build directory is {}\n'''.format(PRJ_DIR)) 
                                  
-    parser.add_argument('-i', '--install', dest='install_dir', type=str, default=INSTALL_DIR, 
-                        help='''Installs a previously NEMS built system into a NEMS compliance user defined directory. The default install directory is {}\n'''.format(INSTALL_DIR))
+    parser.add_argument('-i', '--install', dest='run_dir', type=str, default=RUN_DIR, 
+                        help='''Installs a previously NEMS built system into a NEMS compliance user defined directory. The default install directory is {}\n'''.format(RUN_DIR))
+
+    parser.add_argument('-n', '--node', dest='node_name', type=str, help='Name of the machine your are running this program from such as "hera". This name must be the same name as in conf/configure.nems.hera.<compiler>\n')
+    parser.add_argument('-e', '--event', dest='event_name', type=str, help='A Named Storm Event Model such as "Sandy"\n')
+    parser.add_argument('-u', '--module', dest='user_module', type=str, help='NEMS user module name, located in modulefiles\n')
+    parser.add_argument('-s', '--scenario', dest='run_name', type=str, help='A unique name for this model run\n')
+    parser.add_argument('-m', '--models', dest='model_list', type=str, help='Comma separated model directory names where the model source code resides at the same level of NEMS source codes. No space before and after commas. The model names are case sensative. Example: ADCIRC,WW3,NWM\n')
 
     args = parser.parse_args()
-
-    if len(sys.argv) == 1:
-        if exist(args.build_dir) and exist(args.install_dir):
-            print("\nbuilding in {} and installing into {}".format(BUILD_DIR, INSTALL_DIR))
-            BUILD_DIR = os.path.abspath(args.build_dir); INSTALL_DIR = os.path.abspath(args.install_dir)
+    print(len(sys.argv))
+    if len(sys.argv) == 11:
+        if exist(args.prj_dir) and exist(args.run_dir):
+            print("\nbuilding in {} and installing into {}".format(PRJ_DIR, RUN_DIR))
+            PRJ_DIR = os.path.abspath(args.prj_dir); RUN_DIR = os.path.abspath(args.run_dir)
         else:
-            print("Absolute path {} or {} not found!\n".format(args.build_dir,args.install_dir))
+            print("Absolute path {} or {} not found!\n".format(args.prj_dir,args.run_dir))
             sys.exit(0) 
 
-    elif len(sys.argv) == 5:
-        if exist(args.build_dir) and exist(args.install_dir):
-            print("building in {} and installing into {}\n".format(args.build_dir, args.install_dir))
-            BUILD_DIR = os.path.abspath(args.build_dir); INSTALL_DIR = os.path.abspath(args.install_dir)
+    elif len(sys.argv) == 15:
+        if exist(args.prj_dir) and exist(args.run_dir):
+            print("building in {} and installing into {}\n".format(args.prj_dir, args.run_dir))
+            PRJ_DIR = os.path.abspath(args.prj_dir); RUN_DIR = os.path.abspath(args.run_dir)
         else:
-            print("Absolute path {} or {} not found!\n".format(args.build_dir,args.install_dir))
+            print("Absolute path {} or {} not found!\n".format(args.prj_dir,args.run_dir))
             sys.exit(0) 
+    else:
+        print("Wrong number of command line arguments\n")
+        print(usage)
+        sys.exit(0)
 
-    elif len(sys.argv) == 3 and (sys.argv[1] == '--build' or sys.argv[1] == '-b') :
-        if exist(args.build_dir):
-            print("Building in user defined path {}\n".format(args.build_dir))
-            BUILD_DIR = os.path.abspath(args.build_dir)
-        else:
-            print("Absolute path {} not found!\n".format(args.build_dir))
-            sys.exit(0) 
+    # ./start_wkflw.py -n hera -e sandy -u ESMF_NUOPC -s baserun -m ADCIRC,NWM -b /scratch2/COASTAL/coastal/save/NAMED_STORMS/NEMS_APP -i /scratch2/COASTAL/coastal/save/NAMED_STORMS/NEMS_APP/NEMS_RUN
 
-    elif len(sys.argv) == 3 and (sys.argv[1] == '--install' or sys.argv[1] == '-i') :
-        if exist(args.install_dir):
-            print("Installing into user defined path {}\n".format(args.install_dir))
-            INSTALL_DIR = os.path.abspath(args.install_dir)
-        else:
-            print("Absolute path {} not found!\n".format(args.install_dir))
-            sys.exit(0) 
-
-
+    # check_args()    TODO
+    
     # options in slurm job
     j = {'account':'coastal', 'queue':'debug', 'error':'slurm.error', 'jobname':'nsem',
          'mailuser':'beheen.m.trimble@noaa.gov', 'ntasks':24, 'nodes':32, 'time':420,
@@ -465,17 +465,28 @@ if __name__ == '__main__':
     
     node = 'hera'                                       # computer node
     models = ['ADCIRC', 'WW3DATA', 'ATMESH', 'NWM']     # coupled list of models
-    events = 'ike'                                      # storm event
-    module_name = 'ESMF_NUOPC'                          # NEMS user modulefiles 
+    event = 'ike'                                      # storm event
+    user_module = 'ESMF_NUOPC'                          # NEMS user modulefiles 
     scenarios = ['TBD']                                 # model runs with specific objective in mind
     nems_cf = 'nems.configure'
 
-    srcdir = get_source_dir(args.build_dir)
-    scriptdir = get_script_dir(args.build_dir)
-    nems_usr_module = get_user_module(srcdir, node, module_name)
 
+    # check_args()    TODO
 
-    build = NEMSBuild(models, node, module_name)
+    node = args.node_name
+    models = args.model_list.split(",")
+    event = args.event_name
+    user_module = args.user_module
+    run_name = args.run_name
+
+    srcdir = get_source_dir(args.prj_dir)
+    scriptdir = get_script_dir(args.prj_dir)
+    nems_usr_module = get_user_module(srcdir, node, user_module)
+
+    nems_cf = 'nems.configure'
+    model_cf = 'model_configure'
+
+    build = NEMSBuild(models, node, user_module)
     build.write()
     build.build_nems_app()
     
