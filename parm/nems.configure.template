@@ -6,7 +6,6 @@
 EARTH_component_list: ATM OCN WAV NWM
 EARTH_attributes::
   Verbosity = max
-  Verbosity1 = max
 ::
 
 # ATM #
@@ -43,14 +42,8 @@ runSeq::
   @3600
     ATM -> OCN   :remapMethod=redist
     WAV -> OCN   :remapMethod=redist
-    ATM -> NWM   :remapMethod=redist
-    WAV -> NWM   :remapMethod=redist
-    OCN -> NWM   : TO DO ........
-    ATM
+    ATM 
     WAV
     OCN
-    NWM
-
   @
-
 ::

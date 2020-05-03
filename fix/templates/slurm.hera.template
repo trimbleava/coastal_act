@@ -1,0 +1,19 @@
+#!/bin/sh --login
+
+#SBATCH --account=coastal
+#SBATCH --job-name=$RunName
+#SBATCH -q batch
+#SBATCH --time=$WallTime
+#SBATCH --ntasks=$NumProc
+#SBATCH --mail-user=saeed.moghimi@noaa.gov
+#SBATCH --mail-type=ALL
+#SBATCH --output=${RunName}.out.log
+#SBATCH --error=${RunName}.err.log
+
+
+# -- load ENV variables
+source   $modfile
+
+srun ./NEMS.x 
+
+

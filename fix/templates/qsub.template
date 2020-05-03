@@ -1,0 +1,53 @@
+#!/bin/sh --login
+# 
+# -- Request number of processes to use
+#PBS -l procs=$NumProc
+# 
+# Maximize scheduling through HH:MM:SS (max 8 hour)
+#PBS -l walltime=$WallTime
+#
+# -- Specify the job queue
+#PBS -q $Queue
+#
+# -- Specify under which account a job should run
+#PBS -A coastal
+#
+# -- Set the name of the job, or moab will default to STDIN
+#PBS -N $RunName
+
+# -- tells the batch system to remember all of your environmental variables
+# --  #PBS -V
+
+# -- Specify where to put stdout and stderr
+#PBS -o job.\${PBS_JOBID}.out
+#PBS -e job.\${PBS_JOBID}.err
+
+# change directory to the working directory of the job
+# Use the if clause so that this script stays portable
+#
+
+if [ x\$PBS_O_WORKDIR != x ]; then
+   cd \$PBS_O_WORKDIR
+fi
+
+# -- load ENV variables
+source  $modfile
+
+mpirun -np $NumProc ./NEMS.x 
+
+
+############################################## 
+##  echo "work dir is >  \${PBS_O_WORKDIR}"
+##  cd  \${PBS_O_WORKDIR}
+##  ln -svf  NEMS.x  esm1
+##  mpirun -np $NumProc ./esm1
+##  mpirun -np $NumProc ./NEMS.x 
+##  ##
+##  $NumProc
+##  $ExeFile
+##  $WallTime
+##  $queue
+##  $RunName
+## -- #PBS -l procs=$NumProc
+###############################################
+

@@ -494,4 +494,9 @@ if __name__ == '__main__':
     #nems_cf_obj = NEMSConfigure()
     #nems_cf_obj.read(nems_cf)
 
+    # Script read the information from config files and copy them with a .template and 
+    # save them in fix/template - program can read this file from fix too but my way the 
+    # name are consistent with the run_name.  read the model list from this file 
+    # The main script creates a one step process to build and install a unique run. 
+    # A  copy of build.sh and install.sh to be saved for future builds or run? 
 
