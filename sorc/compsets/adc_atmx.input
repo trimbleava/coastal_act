@@ -1,0 +1,107 @@
+
+# Builds for the coupled adcirc and atm data:
+build adcatmx.x {
+    use plat
+    NEMS.x="@[plat%EXECrt]/NEMS_adc_atmx.x"
+    modules.nems="@[plat%INCrt]/NEMS_adc_atmx.x.modules"
+    md5sum="@[NEMS.x].md5"
+    target="@[NEMS.x]"
+    build=NEMSAppBuilder(NEMS.x="@[NEMS.x]",modules.nems="@[modules.nems]",
+                         OPTS="app=coupledADC_ATMx",md5sum="@[md5sum]")
+}
+
+
+# Variables used by all tests:
+
+adcww3_common = {
+    use nems_vars
+    use common_vars
+    nems_configure='atm_nostep'
+    coupling_interval_fast_sec=' '
+}
+
+
+########################################################################
+# ---------------------- COMPSETS ------------------------------------ #
+########################################################################
+ 
+compset chinecock_2day_sbys_adc@chinecock_atmesh@chinecock: adcatmx.x {
+    ##! ADC<-ATMESH coupling with x minute intervals
+    #
+    # This compset couples:
+    #
+    # * ADCIRC and ATMESH side-by-side for Chinecock Inelet
+
+    use adcww3_common
+    TEST_DESCR="NUOPC:  ADCIRC <--- 3600s  ATMESH ... 2 days"
+    CNTL_NAME='chinecock_2day_sbys_adc@chinecock_atmesh@chinecock'
+
+    COM="@[plat%COMrt]/@[TEST_NAME]"          # Test result area
+    RUNDIR_ROOT="@[plat%TMPrt]"
+    RUNDIR="@[RUNDIR_ROOT]/@[TEST_NAME]"      # Test work area
+    CNTL="@[plat%BASELINE]/RT-Baselines/@[CNTL_NAME]"      # Control baseline area
+    INPUTS="@[plat%INPUTS]"                   # Test input data
+
+    NTHREADS=1
+    TASKS=5 
+
+    walltime=1800 #in seconds
+
+    build=adcatmx.x
+
+    ##copied from other 
+    #export CDATE=2008092000
+    #export NDAYS=5
+
+    # - model_configure -- 
+    YEAR="2008"
+    MONTH="08"
+    DAY="11"
+    HOUR="00"
+    NFHRS="48"    #number of forecast hours
+
+
+    # - nems.configure ---
+    nems_configure='atm_ocn'
+    atm_model='atmesh'
+    atm_petlist_bounds="4 4"    
+    ocn_model='adcirc'
+    ocn_petlist_bounds="0 3"  
+    coupling_interval_sec=3600.0  # 30min coupling
+
+    prep=nems_regtest_prep(
+        RUNDIR="@[RUNDIR]",modules="@[build%modules.nems]",
+        CNTL="@[CNTL]")
+
+    filters input {
+      # Parse any files that need variables from other scopes, and do
+      # not need fancy scripting.  Presently, this is just the NEMS
+      # and mediator init files.
+      #           WORK FILE <=method==  SOURCE
+      'nems.configure'      <=atparse=  "@[CONF]/nems.configure.@[nems_configure].IN"
+      'model_configure'     <=atparse=  "@[CONF]/model_configure.IN"
+      # ADCIRC Specific
+      #                  '*' <=copydir= "/scratch4/COASTAL/coastal/save/Saeed.Moghimi/models/NEMS/NEMS_inps/inp_chinnecockv01/chinecock_try03/chinnecock_ww3_file_esm1_v2.0"
+                        '*' <=copydir= "/scratch4/COASTAL/coastal/save/Saeed.Moghimi/models/NEMS/NEMS_inps/nsemodel_inps/chinnecock_forcing_v2/inp_adcirc"
+      # ATMESH Specific 
+      #                  '*' <=copydir= "/scratch4/COASTAL/coastal/save/Saeed.Moghimi/models/NEMS/NEMS_inps/inp_chinnecockv01"
+                        '*' <=copydir= "/scratch4/COASTAL/coastal/save/Saeed.Moghimi/models/NEMS/NEMS_inps/nsemodel_inps/chinnecock_forcing_v2/inp_atmesh"
+      #                  '*' <=copydir= "/scratch4/COASTAL/coastal/scrub/Saeed.Moghimi/stmp1/a70_CHI_ATM_WAV2OCN_v1.1/rt_20171206_h14_m17_s47r293"
+                        '*' <=copydir= "/scratch4/COASTAL/coastal/save/Andre.VanderWesthuysen/NEMS/NEMS_inps/nsemodel_inps/chinnecock_inlet_coupled/inp_atm"
+    }
+
+    # Specify output files:
+    criteria output {
+      #   WORKFILE .comparison. TARGET
+            'sigf00' .bitcmp. "@[CNTL]"
+   "@[build%target]" .md5cmp. "@[build%md5sum]"
+    }
+
+    spawn execute {
+        {"@[build%target]", ranks="@[TASKS]", threads="@[NTHREADS]"}
+    }
+}
+
+########################################################################
+
+    

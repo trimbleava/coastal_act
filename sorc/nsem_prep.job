@@ -1,0 +1,34 @@
+#!/bin/sh -l
+
+#SBATCH -A coastal
+#SBATCH -q test
+#SBATCH -e jnsem_prep.err.log
+#SBATCH --output=jnsem_prep.out.log
+#SBATCH --ignore-pbs
+#SBATCH -J jnsem_prep.job
+#SBATCH --mail-user=??
+#SBATCH --ntasks-per-node=780
+#SBATCH -N 34
+#SBATCH --parsable
+#SBATCH -t 36
+
+############################### main - to run: $sbatch jnsem_prep.job ##########################
+set -x
+echo $SLURM_SUBMIT_DIR		# (in Slurm, jobs start in "current dir")   
+echo $SLURM_JOBID                                                     
+echo $SLURM_JOB_NAME
+echo $SLURM_NNODES                                             
+echo $SLURM_TASKS_PER_NODE
+
+echo $SLURM_NODELIST		# give you the list of assigned nodes.
+
+echo 'STARTING THE JOB AT'
+date
+
+# change to absolute path of where you pulled the 
+# NEMS and NEMS Applications. use modules.nems becasue user's
+# modulefiles are copied into this with constant name.
+cp -fv /scratch2/COASTAL/coastal/save/NAMED_STORMS/COASTAL_ACT/NEMS/exe/NEMS.x NEMS.x
+source /scratch2/COASTAL/coastal/save/NAMED_STORMS/COASTAL_ACT/NEMS/src/conf/modules.nems
+srun ./NEMS.x
+date

@@ -1,0 +1,51 @@
+# This "ecf script", also known as "suite definition" defines 
+# the main work that is to be carried out. The script includes 
+# child commands and special comments and manual sections that 
+# provide information for operators.
+#
+# The child commands are a restricted set of client commands 
+# that communicate with the server. They inform the server when 
+# the job has started, completed or set an event.
+#
+#
+
+# Definition of the suite test, "$HOME/course/test.def"
+suite test
+   %include "<head.h>"
+   edit ECF_HOME "$HOME/course"  # replace '$HOME' with the path to your home directory
+   task t1
+       echo "I am part of a suite that lives in %ECF_HOME%"
+   %include "<tail.h>"
+endsuite
+
+
+# Pyhton api of the suite test, "$HOME/course/test.py"
+#!/usr/bin/env python3 
+import os
+from ecf import Defs,Suite,Task,Edit
+    
+print("Creating suite definition")
+home = os.path.join(os.getenv("HOME"),"course")
+defs = Defs(
+        Suite('test',
+            Edit(ECF_HOME=home),
+            Task('t1')))
+print(defs)
+
+
+#!/usr/bin/env python3 
+#BSUB -J <run_name.job>              job name
+#BSUB -o <run_dir/run_name>          stdout/stderr
+#BSUB -p %PROJ% (i.e. coastal act)   project identifier
+#BSUB -q %QUEUE%                     LSF queue name
+#BSUB -L /bin/sh                     login shell
+
+Beheen 4/30/2020 - 
+
+The jjob script on the other hand is setting the path to one's project.
+Also there is a statement to set a temp data directory. This part is not
+suitable for our NSEM application becasue we need to save our output data
+from of our runs. Our models do not have option to link to data and copying
+large amount of data and then deleting them is not an option.
+
+Let's see how we can adjut the workflow that works for both sides! 

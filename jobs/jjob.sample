@@ -1,3 +1,0 @@
-export COMINnsem=%{COMINnsem:~${COMROOT}
-
-Beheen 4/30/2020 - Wait on this until further progress on our wrkflow.

@@ -1,0 +1,48 @@
+add if run_dir doesn't exist create(?)
+
+
+
+hera_awscli.readme
+
+1. Install Python Anaconda in your home directory, see: https://rdhpcs-common-docs.rdhpcs.noaa.gov/wiki/index.php/Anaconda
+
+2. Install the AWS Command Line Interface (awscli). This is a Python program, so you install it using the Anaconda package manager. Note: This installs packages from a local mirror that has been set up on Hera:
+
+   $ conda install awscli
+
+3. Verify that it is correctly installed
+
+   $ which aws
+
+4. Configure access to CWWED on AWS S3 cloud storage. Use the “aws_access_key_id” and “aws_secret_access_key” provided by Danny. Use “region” = “us-east-1”:
+
+   $ aws configure --profile nsem
+
+This configuration is stored in ~/.aws
+
+5. The awscli program has a fixed syntax:
+
+   $ aws <service> <operation>
+
+6. The cloud storage S3 service has a number of typical file transfer operations (e.g. ls, cp, sync). For the full list, see:
+
+   $ aws s3 help
+
+7. To inspect the CWWED database on AWS S3 (remember to add your access profile “nsem”):
+
+   $ aws s3 ls s3://cwwed-shared/nsem/DHC/Florence/ --profile nsem
+                           PRE Mobile Mesonet/
+                           PRE Soundings/
+                           PRE pressure/
+                           PRE radar/
+                           PRE wind/
+    2020-02-14 19:01:14      0 
+
+Note: AWS S3 uses the concept of prefixes (“PRE”) instead of subfolders. Just think of a prefix as equivalent to a subfolder in a conventional filesystem.
+
+8. To download directories and files, use the sync command:
+
+ $ aws s3 sync s3://cwwed-shared/nsem/DHC/Florence/ local_dir/ --profile nsem
+
+For more details, see: https://github.com/CWWED/cwwed/wiki/NSEM-Shared-Storage-(AWS-S3)
+

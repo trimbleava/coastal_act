@@ -1,19 +1,35 @@
 #!/bin/sh --login
 
 #SBATCH --account=coastal
-#SBATCH --job-name=$RunName
-#SBATCH -q batch
-#SBATCH --time=$WallTime
-#SBATCH --ntasks=$NumProc
+#SBATCH --job-name=${run_name}.job
+##SBATCH -q batch
+#SBATCH --ntasks-per-node=${ntasks}         # --ntasks-per-node=24     number of tasks to invoke on each node
+#SBATCH -N ${nnodes}                        # nodes 32
 #SBATCH --mail-user=saeed.moghimi@noaa.gov
 #SBATCH --mail-type=ALL
-#SBATCH --output=${RunName}.out.log
-#SBATCH --error=${RunName}.err.log
+#SBATCH --output=${run_name}.out.log
+#SBATCH --error=${run_name}.err.log
+#SBATCH -t ${walltime}                      # -t, --time=minutes          time limit
 
 
-# -- load ENV variables
-source   $modfile
+############################### main - to run: sbatch ${run_name}.job ##########################
+set -x
+echo $SLURM_SUBMIT_DIR            # (in Slurm, jobs start in "current dir")       
+echo $SLURM_JOBID                                                      
+echo $SLURM_JOB_NAME
+echo $SLURM_NNODES                                                     
+echo $SLURM_TASKS_PER_NODE
 
-srun ./NEMS.x 
+# PBS_NODEFILE:  There is not a direct equivalent for this, but 
+echo $SLURM_NODELIST              # give you the list of assigned nodes.
 
+# cd $SLURM_SUBMIT_DIR
+echo "STARTING THE JOB AT"
+date
+
+cp -fv /scratch2/COASTAL/coastal/save/NAMED_STORMS/NEMS_APP/NEMS/exe/NEMS.x .
+source /scratch2/COASTAL/coastal/save/NAMED_STORMS/NEMS_APP/modulefiles/hera/ESMF_NUOPC
+
+srun ./NEMS.x
+date
 

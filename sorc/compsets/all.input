@@ -1,0 +1,23 @@
+load 'platforms.input'
+load 'nemscommon.input'
+load 'adc_atmx.input'
+load 'sbys_ww3.input'
+load 'ww3_atmx.input'
+load 'ww3_atmx_IKE.EC2001.input'
+load 'adc_ww3_atmx.input'
+load 'sbys_unstruc_ww3.input'
+
+#run chinecock_2day_sbys_adc@chinecock_atmesh@chinecock 
+run cfsr@20080903_2day_sbys_ww3@T188 @ ww3, standard, baseline
+#run 20170418_2day_sbys_ww3@inlet @ ww3, standard, baseline
+
+
+###########################################################################################
+##If you uncomment what is below, this should be a working gsm-ww3 coupled build and run 
+##you would run ./NEMS/NEMSCompsetRun -f 
+#load 'platforms.input'
+#load 'nemscommon.input'
+#load 'exglobal_fcst.input'
+#load 'gsm_ww3.input'
+#
+#run cfsr@20150401_1day_blocked_gsm@slg@T126_ww3@t188  @ gfs, ww3, standard, baseline, slg

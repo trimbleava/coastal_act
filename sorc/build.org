@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# Description : Script to compile NSEModel NEMS application
+# Date        : May. 02, 2020
+
+# Developer   : beheen.m.trimble@noaa.gov
+# Contributors: saeed.moghimi@noaa.gov
+#               ali.abdolali@noaa.gov
+#               andre.vanderwesthuysen@noaa.gov
+# load modules
+source modulefiles/hera/ESMF_NUOPC
+export NETCDF_CONFIG=/apps/netcdf/4.6.1/intel/16.1.150/bin/nc-config   
+export METIS_PATH=/scratch2/COASTAL/coastal/save/Ali.Abdolali/SourceFile/PARMETIS/parmetis-4.0.3
+export ESMFMKFILE=/scratch1/NCEPDEV/nems/emc.nemspara/soft/esmf/8.0.0bs48g-intel18.0.5.274-impi2018.0.4-netcdf4.6.1/lib/esmf.mk
+
+cd NEMS
+
+#clean up
+make -f GNUmakefile distclean_ADCIRC COMPONENTS="ADCIRC"
+make -f GNUmakefile distclean_WW3 COMPONENTS="WW3"
+make -f GNUmakefile distclean_ATMESH COMPONENTS="ATMESH"
+make -f GNUmakefile distclean_NWM COMPONENTS="NWM"
+make -f GNUmakefile distclean_NEMS COMPONENTS="NEMS"
+
+#make
+make -f GNUmakefile build COMPONENTS="ADCIRC ATMESH WW3 NWM"

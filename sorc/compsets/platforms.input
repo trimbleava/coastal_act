@@ -1,0 +1,130 @@
+# DEFAULTS VALUES OVERRIDDEN BY PLATFORMS
+
+platform.defaults={
+    BUILD_WALLTIME=3600 # Wallclock limit in seconds for build jobs
+    DEFAULT_TEST_WALLTIME=1800 # Default wallclock limit in seconds for test jobs
+
+    SRCnems="@[HOMEnems]/NEMS/src"
+    PARMnems="@[HOMEnems]/parm"
+
+    # Location of GSM exglobal_fcst and *_config scripts
+    SCRIPTnems="@[HOMEnems]/compsets"
+
+    SRCrt="@[HOMErt]/src"
+    EXECrt="@[HOMErt]/exec"
+    INCrt="@[HOMErt]/include"
+
+    # The TMPrt is the scrub area for running regression tests.
+    TMPrt="@[RT_SCRATCH_DIR]/tmp"
+
+    # The COMrt is the output area for files to be verified.
+    COMrt="@[HOMErt]/com"
+
+    # The BASELINE directory contains the "last known good" baseline
+    # to compare to COMrt in verification mode.  In baseline mode,
+    # files are installed to the BASELINE directory, and this variable
+    # is overridden with some temporary directory.
+    BASELINE="@[INPUTS]" # Baseline input or output directory
+
+    # Default locations for various data
+    FIX_LANDSFC="@[BASELINE]/data_GFS/fix.am/"
+    FIX_LANDSFC_GAYNO="@[BASELINE]/data_GFS/fix.gayno/"
+    FIXGLOBAL="@[BASELINE]/data_GFS/fix.am/"
+    FIX_RAD="@[FIXGLOBAL]"
+    DATA_IDEA="@[BASELINE]"
+    DATA_POST="@[BASELINE]/data_POST"
+    RCSDIR="@[PARM_NGAC]"
+    PARM_NGAC="@[BASELINE]/data_GOCART"
+
+    nemsioget='/bin/false'
+    sighdr_path='/bin/false'
+
+    t574_ppn=0 # 0 = use default
+}
+
+
+########################################################################
+
+# load 'wcoss.input'
+
+########################################################################
+
+# HERA SUPPORT
+
+platform hera {
+    use platform.defaults
+    MACHINE_ID='hera' # Name of this platform.
+
+    MPI='IMPI'
+
+    nemsioget='/scratch2/COASTAL/coastal/noscrub/Andre.VanderWesthuysen/RT/NSEModel/UpdateStructure-20171109/tests/gfs_gocart_nemsio'
+#    sighdr_path='/scratch4/NCEPDEV/global/save/Shrinivas.Moorthi/para/exec/global_sighdr'
+    sighdr_path='/bin/false'
+
+    CPU_ACCOUNT='coastal'
+    BUILD_QUEUE='&BUILDQ;'      # Queue to use for compilation jobs
+    SHORT_TEST_QUEUE='&SHORTQ;' # Queue to use for short test jobs
+    LONG_TEST_QUEUE='&LONGQ;'   # Queue to use for long test jobs
+
+    cores_per_node=24           # Number of cores per node on compute nodes
+
+    # The *nems locations are in NEMS checkout areas.
+    HOMEnems=PWD_UP5
+
+    # The *rt locations are auto-generated areas.
+    HOMErt=OUTPUT_PATH
+
+    # INPUTS is the input directory, which should contain fix and parm
+    # files, plus any restarts or other inputs.
+    #BASELINE="/scratch4/NCEPDEV/nems/noscrub/emc.nemspara/RT/UGCS-Weather/UpdateStructure-20170531"
+    BASELINE="/scratch2/COASTAL/coastal/noscrub/Andre.VanderWesthuysen/RT/NSEModel/UpdateStructure-20171109"
+    BASELINE_TEMPLATE="@[BASELINE]"
+    INPUTS="@[BASELINE]"
+
+    # PLATFORM DETECTION -----------------------------------------------
+    embed bash detect [[[
+        # This function is used at PARSE TIME to detect whether we are
+        # on NOAA Hera.  It must be very fast and low resource usage
+        # since the parser runs it.
+        if [[ -d /scratch2 && -d /scratch1 && -d /contrib ]] ; then
+            exit 0
+        fi
+        exit 1
+    ]]]
+
+    # ROCOTO SUPPORT ---------------------------------------------------
+    rocoto={
+        install_dir="@[HOMErt]"
+        log_dir="@[TMPrt]/log"
+        scheduler="moabtorque"
+        entities=[[[
+  <!ENTITY SHORTQ "debug">
+  <!ENTITY LONGQ "debug">
+  <!ENTITY BUILDQ "batch">
+]]]
+        build_resources=[[[
+      <!-- Build job resources minus wallclock -->
+      <queue>@[BUILD_QUEUE]</queue>
+      <memory></memory>
+      <cores>1</cores>
+]]]
+        short_test_resources=[[[
+    <!-- Short test job -->
+    <queue>@[SHORT_TEST_QUEUE]</queue>
+    <memory></memory> <!-- Unlimited memory -->
+]]]
+        long_test_resources=[[[
+    <!-- Long test job -->
+    <queue>@[LONG_TEST_QUEUE]</queue>
+    <memory></memory> <!-- Unlimited memory -->
+]]]
+    }
+
+}
+
+########################################################################
+
+# Autodetection of available platforms.  Calls the "detect" function
+# from each of the listed platforms.
+
+autodetect plat (/ wcoss.phase1, hera, wcoss.phase2 /) # Unsupported: xjet, wcoss.phase2, wcoss.cray

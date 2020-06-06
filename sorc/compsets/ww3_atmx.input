@@ -1,0 +1,104 @@
+
+# Builds for the side-by-side ww3:
+build ww3_atmx.x {
+    use plat
+    NEMS.x="@[plat%EXECrt]/NEMS_ww3_atmx.x"
+    modules.nems="@[plat%INCrt]/NEMS_ww3_atmx.x.modules"
+    md5sum="@[NEMS.x].md5"
+    target="@[NEMS.x]"
+    build=NEMSAppBuilder(NEMS.x="@[NEMS.x]",modules.nems="@[modules.nems]",
+                         OPTS="app=coupledWW3_ATMx",md5sum="@[md5sum]")
+}
+
+
+# Variables used by all tests:
+
+adcww3_common = {
+    use nems_vars
+    use common_vars
+    nems_configure='atm_nostep'
+    coupling_interval_fast_sec=' '
+}
+
+
+########################################################################
+# ---------------------- COMPSETS ------------------------------------ #
+########################################################################
+ 
+compset cfsr@20080903_2day_sbys_ww3@T188: ww3_atmx.x {
+    ##! WW3 side-by-side
+    #
+    # This compset couples:
+    #
+    # * Semilagrangian GSM using the T126 grid with
+    # * Wavewatch3 using the t188 grid
+    #
+    # using a blocked coupling scheme with a  
+    # 30 minute timestep.
+
+    use adcww3_common
+    TEST_DESCR="NUOPC: SLG GSM (T126) <--> WW3 (t188) blocked coupled with 30min intervals"
+    CNTL_NAME='cfsr@20080903_2day_sbys_ww3@T188'
+
+    COM="@[plat%COMrt]/@[TEST_NAME]"          # Test result area
+    RUNDIR_ROOT="@[plat%TMPrt]"
+    RUNDIR="@[RUNDIR_ROOT]/@[TEST_NAME]"      # Test work area
+    CNTL="@[plat%BASELINE]/RT-Baselines/@[CNTL_NAME]"      # Control baseline area
+    INPUTS="@[plat%INPUTS]"                   # Test input data
+
+    NTHREADS=1
+    TASKS=12
+
+    # - model_configure -- 
+    YEAR="2015"
+    MONTH="12"
+    DAY="14"
+    HOUR="00"
+    NFHRS="24"    #number of forecast hours
+
+    walltime=1800 #in seconds
+
+    build=ww3_atmx.x
+
+    # - nems.configure ---
+    nems_configure='atm_wav'
+    atm_model='atmesh'
+    atm_petlist_bounds="0 0"    
+    wav_model='ww3'
+    wav_petlist_bounds="1 11"  
+    coupling_interval_sec=3600.0  # 30min coupling
+
+    prep=nems_regtest_prep(
+        RUNDIR="@[RUNDIR]",modules="@[build%modules.nems]",
+        CNTL="@[CNTL]")
+
+    filters input {
+      # Parse any files that need variables from other scopes, and do
+      # not need fancy scripting.  Presently, this is just the NEMS
+      # and mediator init files.
+      #           WORK FILE <=method==  SOURCE
+      #'atmos.configure'     <=atparse=  "@[CONF]/atmos.configure_gfs"
+      'nems.configure'      <=atparse=  "@[CONF]/nems.configure.@[nems_configure].IN"
+      'model_configure'     <=atparse=  "@[CONF]/model_configure.IN"
+      # WW3 Specific
+                        '*' <=copydir= "/scratch4/COASTAL/coastal/save/Andre.VanderWesthuysen/NEMS/NEMS_inps/nsemodel_inps/chinnecock_inlet_coupled/inp_wav"
+      #                  '*' <=copydir= "/scratch4/COASTAL/coastal/save/Andre.VanderWesthuysen/NEMS/NEMS_inps/nsemodel_inps/Case3_20170415_Ike"
+      # ATMESH Specific 
+      #                  '*' <=copydir= "/scratch4/COASTAL/coastal/save/Saeed.Moghimi/models/NEMS/NEMS_inps/nsemodel_inps/chinnecock_forcing_v2/inp_atmesh"
+                        '*' <=copydir= "/scratch4/COASTAL/coastal/save/Andre.VanderWesthuysen/NEMS/NEMS_inps/nsemodel_inps/chinnecock_inlet_coupled/inp_atm"
+    }
+
+    # Specify output files:
+    criteria output {
+      #   WORKFILE .comparison. TARGET
+            'sigf00' .bitcmp. "@[CNTL]"
+   "@[build%target]" .md5cmp. "@[build%md5sum]"
+    }
+
+    spawn execute {
+        {"@[build%target]", ranks="@[TASKS]", threads="@[NTHREADS]"}
+    }
+}
+
+########################################################################
+

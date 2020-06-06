@@ -1,0 +1,180 @@
+
+wcoss.common={   # Common resources for all WCOSSes
+    use platform.defaults
+    MACHINE_ID='wcoss'
+
+    HOMEnems=PWD_UP5
+    HOMErt=OUTPUT_PATH
+    INPUTS="@[BASELINE]"
+#    INPUTS='/meso/noscrub/wx20rv/REGRESSION_TEST'
+
+    sighdr_path='/bin/false'
+}
+
+platform wcoss.phase1 {
+    use wcoss.common
+    CPU_ACCOUNT='GFS-T2O'
+    pex='1'
+    cores_per_node=16
+    cpus_per_core=2
+    MPI='LSF'
+    SHORT_TEST_QUEUE='&SHORTQ;'
+    LONG_TEST_QUEUE='&LONGQ;'
+    BUILD_QUEUE='&BUILDQ;'
+
+    BASELINE="/nems/noscrub/emc.nemspara/RT/NEMSGSM/trunk-20170213/data"
+    BASELINE_TEMPLATE="/nems/noscrub/emc.nemspara/RT/NEMSGSM/trunk-20170213/template"
+    nemsioget='/nwprod/ngac.v1.0.0/exec/nemsio_get'
+    PARM_NGAC='/nems/noscrub/Jun.Wang/NGAC/v2.0.0/parm'
+
+    t574_ppn=8
+
+    embed bash detect [[[
+        # This function is used at PARSE TIME to detect whether we are
+        # on WCOSS Phase 1.  It must be very fast and low resource
+        # usage since the parser runs it.
+        if [[ -d /usrx && -d /global && -e /etc/redhat-release && \
+              -e /etc/prod ]] ; then
+            # We are on WCOSS Phase 1 or 2.
+            if ( ! cat /proc/cpuinfo |grep 'processor.*32' ) ; then
+                # Fewer than 32 fake (hyperthreading) cpus, so Phase 1.
+                exit 0
+            fi
+        fi
+        exit 1
+    ]]]
+
+    # ROCOTO SUPPORT ---------------------------------------------------
+    rocoto={
+        install_dir="@[HOMErt]"
+        log_dir="@[TMPrt]/log"
+        scheduler="lsf"
+        entities=[[[
+  <!ENTITY SHORTQ "dev">
+  <!ENTITY LONGQ "dev">
+  <!ENTITY BUILDQ "dev_shared">
+]]]
+        build_resources=[[[
+      <!-- Build job resources minus wallclock -->
+      <queue>@[BUILD_QUEUE]</queue>
+      <memory>4G</memory>
+      <cores>1</cores>
+      <native>-R 'affinity[core(1)]'</native>
+]]]
+        short_test_resources=[[[
+    <!-- Short test job -->
+    <queue>@[SHORT_TEST_QUEUE]</queue>
+    <memory></memory> <!-- Unlimited memory -->
+    <native>-a poe</native>
+]]]
+        long_test_resources=[[[
+    <!-- Long test job -->
+    <queue>@[LONG_TEST_QUEUE]</queue>
+    <memory></memory> <!-- Unlimited memory -->
+    <native>-a poe</native>
+]]]
+    }
+
+}
+
+platform wcoss.phase2 {
+    use wcoss.common
+    CPU_ACCOUNT='GFS-T2O'
+    pex='1'
+    cores_per_node=24
+    cpus_per_core=2
+    MPI='LSF'
+    SHORT_TEST_QUEUE='&SHORTQ;'
+    LONG_TEST_QUEUE='&LONGQ;'
+    BUILD_QUEUE='&BUILDQ;'
+
+    BASELINE="/nems/noscrub/emc.nemspara/RT/UGCS-Weather/UpdateStructure-20170531"
+    BASELINE_TEMPLATE="@[BASELINE]"
+    INPUTS="@[BASELINE]"
+    nemsioget='/nwprod/ngac.v1.0.0/exec/nemsio_get'
+    PARM_NGAC='/nems/noscrub/Jun.Wang/NGAC/v2.0.0/parm'
+
+    t574_ppn=6
+
+    embed bash detect [[[
+        # This function is used at PARSE TIME to detect whether we are
+        # on WCOSS Phase 1.  It must be very fast and low resource
+        # usage since the parser runs it.
+        if [[ -d /usrx && -d /global && -e /etc/redhat-release && \
+              -e /etc/prod ]] ; then
+            # We are on WCOSS Phase 1 or 2.
+            if ( cat /proc/cpuinfo |grep 'processor.*32' ) ; then
+                # Not 32 fake (hyperthreading) cpus, so Phase 2.
+                exit 0
+            fi
+        fi
+        exit 1
+    ]]]
+
+    # ROCOTO SUPPORT ---------------------------------------------------
+    rocoto={
+        install_dir="@[HOMErt]"
+        log_dir="@[TMPrt]/log"
+        scheduler="lsf"
+        entities=[[[
+  <!ENTITY SHORTQ "dev2">
+  <!ENTITY LONGQ "dev2">
+  <!ENTITY BUILDQ "dev2_shared">
+]]]
+        build_resources=[[[
+      <!-- Build job resources minus wallclock -->
+      <queue>@[BUILD_QUEUE]</queue>
+      <memory>4G</memory>
+      <cores>1</cores>
+      <native>-R 'affinity[core(1)]'</native>
+]]]
+        short_test_resources=[[[
+    <!-- Short test job -->
+    <queue>@[SHORT_TEST_QUEUE]</queue>
+    <memory></memory> <!-- Unlimited memory -->
+    <native>-a poe</native>
+]]]
+        long_test_resources=[[[
+    <!-- Long test job -->
+    <queue>@[LONG_TEST_QUEUE]</queue>
+    <memory></memory> <!-- Unlimited memory -->
+    <native>-a poe</native>
+]]]
+    }
+
+}
+
+platform wcoss.cray {
+    # FIXME: WCOSS CRAY SUPPORT DOES NOT WORK YET
+    use platform.defaults
+    MACHINE_ID='wcoss'
+    pex='cray'
+    BUILD_QUEUE='dev'
+    SHORT_TEST_QUEUE='dev'
+    LONG_TEST_QUEUE='dev'
+    MPI='LSFCray'
+
+    # The *nems locations are in NEMS checkout areas.
+    HOMEnems="FIXME"
+
+    # The *rt locations are auto-generated areas.
+    HOMErt="FIXME"
+
+    # INPUTS is the input directory, which should contain fix and parm
+    # files, plus any restarts or other inputs.
+    INPUTS="FIXME"
+
+    rocoto={
+        ## FIXME: INSERT TEXT HERE
+    }
+
+    embed bash detect [[[
+        # This function is used at PARSE TIME to detect whether we are
+        # on WCOSS Cray.  It must be very fast and low resource usage
+        # since the parser runs it.
+        if [[ -d /gpfs/hps && -e /etc/SuSE-release && -d /usrx ]] ; then
+            exit 0
+        fi
+        exit 1
+    ]]]
+}

@@ -1,0 +1,92 @@
+#!/bin/sh 
+ 
+date
+export PS4=' $SECONDS + ' 
+set -x 
+ 
+export pgm="NWPS"
+export pgmout=OUTPUT.$$
+ 
+export KEEPDATA="YES"     # TODO - to see
+
+PDY=20200605
+
+# temp location of the job working directory, typically $DATAROOT/$jobid 
+export DATA=${DATA:-${DATAROOT:?}/$jobid}
+mkdir -p $DATA   
+cd $DATA
+
+####################################
+# Specify NET and RUN Name and model
+####################################
+export NET=shinnecock
+export RUN=$(echo ${job}|awk -F"_" '{print $2}')
+
+####################################
+# SENDECF  - Flag Events on ECFLOW
+# SENDCOM  - Copy Files From TMPDIR to $COMOUT
+# SENDDBN  - Issue DBNet Client Calls
+####################################
+export SENDCOM=${SENDCOM:-YES}
+export SENDECF=${SENDECF:-YES}
+export SENDDBN=${SENDDBN:-NO}
+
+# Specify Execution Areas
+####################################
+export HOMEnsem=/scratch2/COASTAL/coastal/save/NAMED_STORMS/COASTAL_ACT
+export FIXnsem=/scratch2/COASTAL/coastal/save/NAMED_STORMS/COASTAL_ACT/fix
+export EXECnsem=/scratch2/COASTAL/coastal/save/NAMED_STORMS/COASTAL_ACT/exec
+export SORCnsem=/scratch2/COASTAL/coastal/save/NAMED_STORMS/COASTAL_ACT/sorc
+export PARMnsem=/scratch2/COASTAL/coastal/save/NAMED_STORMS/COASTAL_ACT/parm
+export USHnsem=/scratch2/COASTAL/coastal/save/NAMED_STORMS/COASTAL_ACT/ush
+
+# Set processing DIRs here
+export INPUTdir=${INPUTdir:-${DATA}/input}
+export RUNdir=${RUNdir:-${DATA}/run}
+export TMPdir=${TMPdir:-${DATA}/tmp}
+export LOGdir=${LOGdir:-${DATA}/logs}
+
+# Set NWPS run conditions
+export DEBUGGING=${DEBUGGING:-TRUE}
+export DEBUG_LEVEL=${DEBUG_LEVEL:-1}
+export ISPRODUCTION=${ISPRODUCTION:-TRUE}
+export SITETYPE=${SITETYPE:-EMC}
+
+##############################################
+# Define COM directory
+##############################################
+export COMOUT=/scratch2/COASTAL/coastal/scrub/com/nsem/para/shinnecock/nsem_prep
+export GESOUT=/scratch2/COASTAL/coastal/scrub/com/nsem/nwgs/para
+export GESIN=/scratch2/COASTAL/coastal/scrub/com/nsem/nwgs/para/shinnecock/nsem_prep
+
+# loop over nems.configure per model(alias), also must match run_name
+export COMINatm=/scratch2/COASTAL/coastal/scrub/com/nsem/para/shinnecock/atm
+export COMINwave=/scratch2/COASTAL/coastal/scrub/com/nsem/para/shinnecock/ww3
+export COMINwavedata=/scratch2/COASTAL/coastal/scrub/com/nsem/para/shinnecock/ww3data
+export COMINadc=/scratch2/COASTAL/coastal/scrub/com/nsem/para/shinnecock/adcirc
+export COMINmeshdata=/scratch2/COASTAL/coastal/scrub/com/nsem/para/shinnecock/atmesh
+export COMINnwm=/scratch2/COASTAL/coastal/scrub/com/nsem/para/shinnecock/nwm
+
+# check if we need to create COMOUT and GESOUT here or in main?
+mkdir -p $INPUTdir $RUNdir $TMPdir $LOGdir $COMOUT $GESOUT
+##############################################
+# Execute the script
+/scratch2/COASTAL/coastal/save/NAMED_STORMS/COASTAL_ACT/scripts/exnsem_prep.sh
+##############################################
+
+#startmsg
+msg="JOB jnsem_prep HAS COMPLETED NORMALLY."
+postmsg $jlogfile "$msg"
+
+if [ -e $pgmout ]; then
+    cat $pgmout
+fi
+
+cd /tmp/shinnecock
+
+if [ "$KEEPDATA" != YES ]; then
+    rm -rf $DATA
+fi
+
+date
+

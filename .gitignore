@@ -9,6 +9,16 @@ __pycache__/
 # C extensions
 *.so
 
+KEEP/
+sorc/WW3/*
+sorc/WW3_INSTALL/*
+sorc/NWM/*
+sorc/NWM_INSTALL/*
+sorc/ADCIRC/*
+sorc/ADCIRC_INSTALL/*
+sorc/ATMESH/*
+sorc/ATMESH_INSTALL/*
+
 # Distribution / packaging
 .Python
 build/
