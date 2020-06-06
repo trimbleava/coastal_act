@@ -10,7 +10,7 @@ __pycache__/
 *.so
 
 KEEP/
-sorc/WW3/*
+sorce/WW3/*
 sorc/WW3_INSTALL/*
 sorc/NWM/*
 sorc/NWM_INSTALL/*
