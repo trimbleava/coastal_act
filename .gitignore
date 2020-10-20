@@ -18,6 +18,7 @@ sorc/ADCIRC/*
 sorc/ADCIRC_INSTALL/*
 sorc/ATMESH/*
 sorc/ATMESH_INSTALL/*
+fix/meshes
 
 # Distribution / packaging
 .Python

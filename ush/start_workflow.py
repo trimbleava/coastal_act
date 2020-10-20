@@ -5,55 +5,14 @@
 import glob, os, sys, re, time, argparse
 import datetime, subprocess
 from importlib import import_module
-"""
-result = getattr(foo, 'bar')()
-class A:
-    def __init__(self):
-        pass
-
-    def sampleFunc(self, arg):
-        print('you called sampleFunc({})'.format(arg))
-
-m = globals()['A']()
-func = getattr(m, 'sampleFunc')
-func('sample arg')
-
-# Sample, all on one line
-getattr(globals()['A'](), 'sampleFunc')('sample arg')
-And, if not a class:
-
-def sampleFunc(arg):
-    print('you called sampleFunc({})'.format(arg))
-
-globals()['sampleFunc']('sample arg')
-
-import importlib
-function_string = 'mypackage.mymodule.myfunc'
-mod_name, func_name = function_string.rsplit('.',1)
-mod = importlib.import_module(mod_name)
-func = getattr(mod, func_name)
-result = func()
-
-
-# add this
-import logging
-logger = logging.getLogger('ftpuploader')
-hdlr = logging.FileHandler('ftplog.log')
-formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-hdlr.setFormatter(formatter)
-logger.addHandler(hdlr)
-logger.setLevel(logging.INFO)
-
-"""
-
 from pathlib import Path
 
 # local libs
 from color import Color, Formatting, Base, ANSI_Compatible
-
+import nsem_ini as ini
 
 # globals - updated during reading command line
-PRJ_DIR = Path(os.path.dirname(os.path.abspath(__file__))).parent 
+PRJ_DIR = Path(os.path.dirname(os.path.abspath(__file__))).parent
 RUN_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -84,7 +43,7 @@ def found(file):
 
     f = os.path.abspath(file)
     if not os.path.isfile(f):
-        msg = Color.F_Red + "\nFile {} not found!\n".format(file) 
+        msg = Color.F_Red + "\nFile {} not found!\n".format(file)
         msg += Color.F_Default
         print(msg)
         return 0
@@ -94,61 +53,61 @@ def found(file):
 
 # ecflow nco variables:
 # **********************
-# envir Set to "test" during the initial testing phase, "para" when running in parallel (on a schedule), and "prod" in production. 
+# envir Set to "test" during the initial testing phase, "para" when running in parallel (on a schedule), and "prod" in production.
 # COMROOT com root directory for input/output data on current system ecFlow $COMROOT/$NET/$envir/$RUN.$PDY
-# NWROOT Root directory for application, typically /nw$envir 
-# GESROOT nwges root directory for input/output guess fields on current system 
-# job Unique job name (unique per day and environment) 
-# jobid Unique job identifier, typically $job.$$ (where $$ is an ID number) 
-# jlogfile Log file for start time, end time, and error messages of all jobs  
-# cyc Cycle time in GMT, formatted HH  
-# DATAROOT Directory containing the working directory, often /tmpnwprd1 in production 
-# HOMEmodel Application home directory, typically $NWROOT/ model.v X . Y . Z 
-# SENDWEB Boolean variable used to control sending products to a web server, often ncorzdm 
-# KEEPDATA Boolean variable used to specify whether or not the working directory should be deleted upon successful job completion. 
+# NWROOT Root directory for application, typically /nw$envir
+# GESROOT nwges root directory for input/output guess fields on current system
+# job Unique job name (unique per day and environment)
+# jobid Unique job identifier, typically $job.$$ (where $$ is an ID number)
+# jlogfile Log file for start time, end time, and error messages of all jobs
+# cyc Cycle time in GMT, formatted HH
+# DATAROOT Directory containing the working directory, often /tmpnwprd1 in production
+# HOMEmodel Application home directory, typically $NWROOT/ model.v X . Y . Z
+# SENDWEB Boolean variable used to control sending products to a web server, often ncorzdm
+# KEEPDATA Boolean variable used to specify whether or not the working directory should be deleted upon successful job completion.
 
-# model_ver Current version of the model; where model is the model's directory name (e.g. for $NWROOT/gfs.v12.0.0, gfs_ver=v12.0.0) 
+# model_ver Current version of the model; where model is the model's directory name (e.g. for $NWROOT/gfs.v12.0.0, gfs_ver=v12.0.0)
 # jjob nco variables:
 # *******************
-# pgmout File where stdout of binary executables may be written 
-# NET Model name (first level of com directory structure) 
-# RUN Name of model run (third level of com directory structure) 
+# pgmout File where stdout of binary executables may be written
+# NET Model name (first level of com directory structure)
+# RUN Name of model run (third level of com directory structure)
 # PDY Date in YYYYMMDD format
-# PDYm1-7 Dates of previous seven days in YYYYMMDD format ($PDYm1 is yesterday's date, etc.)  
-# PDYp1-7 Dates of next seven days in YYYYMMDD format ($PDYp1 is tomorrow's date, etc.)  
-# cycle Cycle time in GMT, formatted tHHz 
-# DATA Location of the job working directory, typically $DATAROOT/$jobid  
-# USHmodel Location of the model's ush files, typically $HOME model /ush 
-# EXECmodel Location of the model's exec files, typically $HOME model /exec 
-# PARMmodel Location of the model's parm files, typically $HOME model /parm 
-# FIXmodel Location of the model's fix files, typically $HOME model /fix 
-# COMIN com directory for current model's input data, typically $COMROOT/$NET/$envir/$RUN.$PDY 
-# COMOUT com directory for current model's output data, typically $COMROOT/$NET/$envir/$RUN.$PDY 
-# COMINmodel com directory for incoming data from model model 
-# COMOUTmodel com directory for outgoing data for model model 
+# PDYm1-7 Dates of previous seven days in YYYYMMDD format ($PDYm1 is yesterday's date, etc.)
+# PDYp1-7 Dates of next seven days in YYYYMMDD format ($PDYp1 is tomorrow's date, etc.)
+# cycle Cycle time in GMT, formatted tHHz
+# DATA Location of the job working directory, typically $DATAROOT/$jobid
+# USHmodel Location of the model's ush files, typically $HOME model /ush
+# EXECmodel Location of the model's exec files, typically $HOME model /exec
+# PARMmodel Location of the model's parm files, typically $HOME model /parm
+# FIXmodel Location of the model's fix files, typically $HOME model /fix
+# COMIN com directory for current model's input data, typically $COMROOT/$NET/$envir/$RUN.$PDY
+# COMOUT com directory for current model's output data, typically $COMROOT/$NET/$envir/$RUN.$PDY
+# COMINmodel com directory for incoming data from model model
+# COMOUTmodel com directory for outgoing data for model model
 # GESIN nwges directory for input guess fields; typically $GESROOT/$envir
-# GESOUT nwges directory for output guess fields; typically $GESROOT/$envir 
+# GESOUT nwges directory for output guess fields; typically $GESROOT/$envir
 
-# Each job in ecFlow is associated with an ecFlow script which acts like an LSF submission script, 
-# 1) setting up the bsub parameters and much of 
-# 2) the execution environment and 
-# 3) calling the J-job to execute the job.  
-# 4) All jobs must be submitted to LSF via bsub . 
-# 5) It is at the ecFlow (NCO) or submission script level (development organizations) where certain 
+# Each job in ecFlow is associated with an ecFlow script which acts like an LSF submission script,
+# 1) setting up the bsub parameters and much of
+# 2) the execution environment and
+# 3) calling the J-job to execute the job.
+# 4) All jobs must be submitted to LSF via bsub .
+# 5) It is at the ecFlow (NCO) or submission script level (development organizations) where certain
 #    environment specific variables must be set
 
-# The purpose of the J-Job is fourfold: 
-# 1) to set up location (application/data directory) variables, 
-# 2) to set up temporal (date/cycle) variables, 
-# 3) to initialize the data and working directories, 
-# 4) and to call the ex-script. 
+# The purpose of the J-Job is fourfold:
+# 1) to set up location (application/data directory) variables,
+# 2) to set up temporal (date/cycle) variables,
+# 3) to initialize the data and working directories,
+# 4) and to call the ex-script.
 
-# The ex-script is the driver for the bulk of the application, 
-# 1) including data-staging in the working directory, 
-# 2) setting up any model-specific variables, 
-# 3) moving data to long-term storage, 
-# 4) sending products off WCOSS via DBNet and 
-# 5) performing appropriate validation and error checking.  
+# The ex-script is the driver for the bulk of the application,
+# 1) including data-staging in the working directory,
+# 2) setting up any model-specific variables,
+# 3) moving data to long-term storage,
+# 4) sending products off WCOSS via DBNet and
+# 5) performing appropriate validation and error checking.
 # 6) It may call one or more utility (ush) scripts.
 class NCOSystem():
 
@@ -161,66 +120,68 @@ class NCOSystem():
     FIX = 'fix'
     JOBS = 'jobs'
 
-    # unique run_dir is constructed by this format
-    
+    # unique run_dir is constructed by this format - Note: currenty RUN_DIR includes the nsem
+
     """ $COMROOT/$NET/$envir/$RUN.$PDY
-        COMIN com directory for current model's input data, typically $COMROOT/$NET/$envir/$RUN.$PDY 
-        COMOUT com directory for current model's output data, typically $COMROOT/$NET/$envir/$RUN.$PDY 
-        COMINmodel com directory for incoming data from model model 
+        COMIN com directory for current model's input data, typically $COMROOT/$NET/$envir/$RUN.$PDY
+        COMOUT com directory for current model's output data, typically $COMROOT/$NET/$envir/$RUN.$PDY
+        COMINmodel com directory for incoming data from model model
 
     <RUN_DIR>/                                              ==> ${COMROOT}/
         |--- nsem                                           ==> $NET - first level dir
-                |--- $envir/                                ==> test|para|prod 
+                |--- $envir/                                ==> test|para|prod
                         |--- logs
                         |     |--- j<logfile>jobid          ==> j$job$$
                         |--- <storm>/                       ==> this is extra in the hi-er-archy
                                |--- <input_data>            ==> $COMIN
-                               |     
+                               |
                                |
                                |--- <run_name>/             ==> $RUN - third level dir
                                         |--- <out_data>/    ==> $COMOUT
 
-                                                            (i.e. $COMROOT/$NET/$envir/$RUN.$PDY 
+                                                            (i.e. $COMROOT/$NET/$envir/$RUN.$PDY
     'COMROOT' : RUN_DIR,     # let's call this run_dir
     'GESROOT' : GESROOT,     # let's have this in comroot/nwges
     'DATAROOT': DATAROOT,    # let's mak this on /tmp<storm>|/tmp<nsem>
     'NWROOT'  : PRJ_DIR      # let's call this prj_dir
 
     """
+
     def __init__(self, event, envir, run_name, dataroot, gesroot, model="nsem"):
 
         self.COMROOT = RUN_DIR               # COMROOT root directory for input/output data on current system
         self.GESROOT = gesroot               # GESROOT nwges root directory for input/output guess fields on current system
         self.DATAROOT = dataroot             # DATAROOT Directory containing the working directory, often /tmpnwprd1 in production
-        self.NWROOT = PRJ_DIR                # NWROOT Root directory for application, typically /nw$envir 
+        self.NWROOT = PRJ_DIR                # NWROOT Root directory for application, typically /nw$envir
         self.NET = event.lower()
         self.envir = envir.lower()
         self.RUN = run_name.lower()
-        self.job = self.RUN                  # job Unique job name (unique per day and environment) 
+        self.job = self.RUN                  # job Unique job name (unique per day and environment)
 
 
         self.jlogfile = os.path.join(self.COMROOT, self.envir, "logs", "jlogfile." + self.job)
 
         # com directory for current model's input data, typically $COMROOT/$NET/$envir/$RUN.$PDY
         self.COMIN = os.path.join(self.COMROOT, self.envir, self.NET)
-        
+        self.COMINnwm = os.path.join(self.COMIN,"nwm")
+
         # com directory for current model's output data, typically $COMROOT/$NET/$envir/$RUN.$PDY
         # see if needed, created in jjob too
         self.COMOUT = os.path.join(self.COMROOT, self.envir, self.NET, self.RUN)
 
         # GESIN nwges directory for input guess fields; typically $GESROOT/$envir
-        self.GESIN = os.path.join(self.GESROOT,self.envir, self.NET, self.RUN)
- 
+        self.GESIN = os.path.join(self.GESROOT, self.envir, "nwgs")
+
         # GESOUT nwges directory for output guess fields; typically $GESROOT/$envir TODO - see if needed, created in jjob script too
-        self.GESOUT = os.path.join(self.GESROOT, self.envir)
+        #self.GESOUT = os.path.join(self.GESROOT, self.envir)
 
         # DATA Location of the job working directory, typically $DATAROOT/$jobid
-        # This directory gets created though jjob script, I think make DATAROOT+=NET 
+        # This directory gets created though jjob script, I think make DATAROOT+=NET
 
 
     def write_helper(self, nems_cfg):
 
-        # create a helper export variables 
+        # create a helper export variables
 
         nwroot = self.NWROOT
 
@@ -230,6 +191,7 @@ class NCOSystem():
 
 # Enviroment vars from ecFlow scripting
 export RUN_DIR={}
+export NWROOT={}
 export FIXnsem={}/fix
 export EXECnsem={}/exec
 export SORCnsem={}/sorc
@@ -246,10 +208,10 @@ export COMINnwm={}
 export STORM={}
 export RUN_TYPE={}
 export jlogfile={}
-""".format(self.COMROOT,nwroot,nwroot,nwroot,nwroot,nwroot,self.GESIN,self.COMIN,
+""".format(self.COMROOT,nwroot,nwroot,nwroot,nwroot,nwroot,nwroot,self.GESIN,self.COMIN,
            os.path.join(self.COMIN,"atm"), os.path.join(self.COMIN,"ww3"),
            os.path.join(self.COMIN,"ww3data"), os.path.join(self.COMIN,"atmesh"),
-           os.path.join(self.COMIN,"adcirc"), os.path.join(self.COMIN,"nwm"),
+           os.path.join(self.COMIN,"adcirc"), self.COMINnwm,
            self.NET, self.RUN, self.jlogfile)
 
         outfile = os.path.join(self.ush_dir(), "nsem_export.sh")
@@ -258,60 +220,67 @@ export jlogfile={}
 
         # change mode
         subprocess.call(["chmod", "a+x", outfile])
-       
-        print("\nProcessed helper export script %s" %outfile)
-        
+
+        print("Processed helper export script %s" %outfile)
+
         start_date, start_date_str = nems_cfg.get_duration()
 
-        lines= "# To Use - import this into your python script as follow:\n"
-        lines += "# import nsem_env\n"
-        lines += "\n"
-        lines += "import sys, os\n"
-        lines += "\n"
-        lines += "\n"
-        lines += "RUNdir = os.getenv('RUNdir')\n"
-        lines += "EXECnsem = os.getenv('EXECnsem')\n"
-        lines += "PARMnsem = os.getenv('PARMnsem')\n"
-        lines += "FIXnsem = os.getenv('FIXnsem')\n"
-        lines += "USHnsem = os.getenv('USHnsem')\n"
-        lines += "GESIN = os.getenv('GESIN')\n"
-        lines += "COMIN = os.getenv('COMIN')\n"
-        lines += "COMINatm = os.getenv('COMINatm')\n"
-        lines += "COMINwave = os.getenv('COMINww3')\n"
-        lines += "COMINwavdata = os.getenv('COMINww3data')\n"
-        lines += "COMINadc = os.getenv('COMINadc')\n"
-        lines += "jlogfile = os.getenv('jlogfile')\n"
-        lines += "\n"
-        lines += "storm = os.getenv('STORM')\n"
-        lines += "run = os.getenv('RUN_TYPE')\n"
-        lines += "\n"
-        lines += 'start_date_str = "' + start_date_str + '"\n'
-        lines += "frcst_hrs = " + str(nems_cfg.get_fcst_hours()) + "\n"
-        lines += "\n"
-        lines += "sys.path.append(USHnsem)\n"
-        lines += "\n"
-        lines += 'print("\\n")\n'
-        lines += 'print("Logfile: ' + self.jlogfile + '")\n'
-        lines += 'print("\\n")\n'
-        lines += "\n"
+        lines= ["# To Use - import this into your python script as follow:",
+                "# import nsem_env",
+                "",
+                "import sys, os",
+                "",
+                "",
+                "RUNdir = os.getenv('RUNdir')",
+                "PRJdir = os.getenv('NWROOT')",
+                "EXECnsem = os.getenv('EXECnsem')",
+                "PARMnsem = os.getenv('PARMnsem')",
+                "FIXnsem = os.getenv('FIXnsem')",
+                "USHnsem = os.getenv('USHnsem')",
+                "GESIN = os.getenv('GESIN')",
+                "COMIN = os.getenv('COMIN')",
+                "COMINatm = os.getenv('COMINatm')",
+                "COMINwave = os.getenv('COMINww3')",
+                "COMINwavdata = os.getenv('COMINww3data')",
+                "COMINadc = os.getenv('COMINadc')",
+                "COMINnwm = os.getenv('COMINnwm')",
+                "jlogfile = os.getenv('jlogfile')",
+                "",
+                "storm = os.getenv('STORM')",
+                "run = os.getenv('RUN_TYPE')",
+                "",
+                'start_date_str = "' + start_date_str + '"',
+                "frcst_hrs = " + str(nems_cfg.get_fcst_hours()),
+                "",
+                "if storm:",
+                "    pass",
+                "else:",
+                '    print("\\nEnvironment is not set! Please source \'nsem_export.sh\' file and re run the program\\n")',
+                "    sys.exit(-1)",
+                "",
+                "sys.path.append(USHnsem)",
+                "",
+                'print("\\n")',
+                'print("Logfile: ' + self.jlogfile + '")',
+                'print("\\n")',
+                ""]
 
         outfile = os.path.join(self.ush_dir(), "nsem_env.py")
         with open(outfile, 'w') as fptr:
-            fptr.write(lines)
+            fptr.write("\n".join(lines))
 
         # change mode
         subprocess.call(["chmod", "a+x", outfile])
-       
-        print("\nProcessed helper environment script %s" %outfile)
+
+        print("Processed helper environment script %s" %outfile)
 
 
     def prj_dir(self):
         dir_iterable = [self.source_dir(), self.script_dir(), self.ecf_dir(), self.parm_dir(),
-                        self.fix_dir(), self.ush_dir(), self.exec_dir(), self.jjob_dir(), self.jlogfile]
+                        self.fix_dir(), self.ush_dir(), self.exec_dir(), self.jjob_dir()]
         # generator expression
         return (dir for dir in dir_iterable)
-    
- 
+
     """
     To test in python env:
     >>> get_genrator = self.prj_subdir()
@@ -324,8 +293,8 @@ export jlogfile={}
     """
     def prj_subdir(self):
         # <prj_dir>/parm/storms/<event> - to exists
-        # <prj_dir>/fix/template   
-        # <prj_dir>/fix/meshes/<event>   
+        # <prj_dir>/fix/template
+        # <prj_dir>/fix/meshes/<event>
         # <prj_dir>/sorce/hsofs  hsofs_elevated20m ??
         subdir_iterable = [os.path.join(self.parm_dir(), "storms", self.NET),
                            os.path.join(self.fix_dir(), "meshes", self.NET),
@@ -335,21 +304,21 @@ export jlogfile={}
 
 
     def source_dir(self):
-        return os.path.join(self.NWROOT, self.SOURCE) 
+        return os.path.join(self.NWROOT, self.SOURCE)
 
 
     def script_dir(self):
-        return os.path.join(self.NWROOT, self.SCRIPT) 
+        return os.path.join(self.NWROOT, self.SCRIPT)
 
 
     def ecf_dir(self):
-        return os.path.join(self.NWROOT, self.ECF) 
+        return os.path.join(self.NWROOT, self.ECF)
 
 
     def fix_dir(self):
         return os.path.join(self.NWROOT, self.FIX)
 
- 
+
     def ush_dir(self):
         return os.path.join(self.NWROOT, self.USH)
 
@@ -361,13 +330,14 @@ export jlogfile={}
     def parm_dir(self):
         return os.path.join(self.NWROOT, self.PARM)
 
- 
+
     def jjob_dir(self):
-        return os.path.join(self.NWROOT, self.JOBS) 
+        return os.path.join(self.NWROOT, self.JOBS)
 
 
     def storm_dir(self, which):
-        # running two storms even for testing overrides ecf/jjob files! 
+        # running two storms even for testing overrides ecf/jjob files!
+        # TODO - let them know about this case!!
         if which == "ecf":
             which = self.ecf_dir()
         elif which == "job":
@@ -389,50 +359,62 @@ export jlogfile={}
         # <prj_dir>/fix/meshes/<event>   hsofs  hsofs_elevated20m ??
         # <prj_dir>/sorc/runupforecast.fd ??
         p = self.NWROOT
+        print("Checking health of project directory: {}".format(p))
         if not exist(p):
-            print("\nCreating model home directory: {}".format(p))
             try:
                 subprocess.run(['mkdir', '-pv', p ], check=True)
-                subprocess.check_call(['mkdir', '-v', self.SOURCE, self.SCRIPT, self.ECF, self.FIX, 
+                subprocess.check_call(['mkdir', '-v', self.SOURCE, self.SCRIPT, self.ECF, self.FIX,
                                        self.USH, self.EXEC, self.PARM, self.JOBS], cwd=p)
             except subprocess.CalledProcessError as err:
                 print('Error in creating model home directory: ', err)
         else:
-            print("\nChecking health of model home directory: {}".format(p))
             for dir in self.prj_dir():
                 if not exist(dir):
                     try:
                       subprocess.run(['mkdir', '-vp', dir ], check=True)
                     except subprocess.CalledProcessError as err:
                       print('Error in creating %s directory: ' %(dir, err))
-                else:
-                    print("\n%s is healthy" %dir) 
-  
-        # now check on subdirs:    
-        print("\nChecking health of model home subdirectories")
+                #else:
+                #    print("\n%s is healthy" %dir)
+
+        # now check on subdirs:
         for dir in self.prj_subdir():
             if not exist(dir):
                 try:
                   subprocess.run(['mkdir', '-vp', dir ], check=True)
                 except subprocess.CalledProcessError as err:
                   print('Error in creating %s directory: ' %(dir, err))
-            else:
-                print("\n%s is healthy" %dir) 
-       
+            #else:
+            #    print("\n%s is healthy" %dir)
+
+
+    # Run dir and subdir
+    def run_subdir(self):
+        subdir_iterable = ['nwm', 'adcirc', 'ww3', 'atmesh', 'atm']
+        for subdir in subdir_iterable:
+            yield subdir
 
 
     def setup_rundir(self):
         p = self.COMIN
+        print("Checking health of run directory: {}".format(p))
         if not exist(p):
-            print("\nCreating model input directory: {}".format(p))
             try:
                 subprocess.run(['mkdir', '-pv', p ], check=True)
-                subprocess.check_call(['mkdir', '-v', 'nwm', 'adcirc', 'ww3', 'atmesh', 'atm'], cwd=p)
             except subprocess.CalledProcessError as err:
                 print('Error in creating model input directory: ', err)
 
+        for dir in self.run_subdir():
+            subdir = os.path.join(p, dir)
+            if not exist(subdir):
+                try:
+                  subprocess.run(['mkdir', '-vp', subdir ], check=True)
+                except subprocess.CalledProcessError as err:
+                  print('Error in creating %s directory: ' %(subdir, err))
+
+
         """created on script side with id
-        p = self.COMOUT   
+        p = self.COMOUT
         if not exist(p):
             print("\nCreating model output directory: {}".format(p))
             try:
@@ -442,12 +424,13 @@ export jlogfile={}
         """
 
         p = self.GESIN
+        print("Checking restart directory: {}".format(p))
         if not exist(p):
-            print("\nCreating gesin directory: {}".format(p))
             try:
                 subprocess.run(['mkdir', '-pv', p ], check=True)
             except subprocess.CalledProcessError as err:
                 print('Error in creating gesin directory: ', err)
+
 
         """created on script side with id
         p = self.GESOUT
@@ -457,7 +440,19 @@ export jlogfile={}
                 subprocess.run(['mkdir', '-pv', p ], check=True)
             except subprocess.CalledProcessError as err:
                 print('Error in creating gesout directory: ', err)
-       """ 
+        """
+
+        # this is a dev logfile, so creating it here.
+        # there is one also in ecf script to create, upon running!! One is extra!!
+        p = self.jlogfile
+        print("Checking logs directory: {}".format(p))
+        if not exist(p):
+            try:
+                subprocess.run(['mkdir', '-pv', p ], check=True)
+            except subprocess.CalledProcessError as err:
+                print('Error in creating logs directory: ', err)
+
+
 
 
     def write_ecf2(self, slurm):
@@ -465,12 +460,12 @@ export jlogfile={}
         sbatch_part = slurm.get_sbatch()
 
         lines = """\n\n#%include <head.h>
-#%include <envir.h> 
+#%include <envir.h>
 
 # base name of model directory (i.e. storm)
-export model={}          
+export model={}
 
-# set to test during the initial testing phase, para when running 
+# set to test during the initial testing phase, para when running
 # in parallel (on a schedule), and prod in production
 export envir={}
 
@@ -482,20 +477,20 @@ export COMROOT={}
 # models restart/spinup files location
 export GESROOT={}
 
-# root directory for application, typically /nw$envir 
+# root directory for application, typically /nw$envir
 export NWROOT={}
 
 # unique job name (unique per day and environment), run_name
 export job=j{}
 export jobid=$job.$$
 
-# temp directory containing the working directory, often /tmpnwprd1 in production 
+# temp directory containing the working directory, often /tmpnwprd1 in production
 export DATAROOT={}
-   
+
 
 # dev environment jlogfile
-mkdir -p ${{COMROOT}}/logs/${{envir}}
-export jlogfile=${{COMROOT}}/logs/${{envir}}/jlogfile.${{job}}
+mkdir -p ${{COMROOT}}/${{envir}}/logs
+export jlogfile=${{COMROOT}}/${{envir}}/logs/jlogfile.${{job}}
 
 # call the jjob script
 ${{NWROOT}}/jobs/{}
@@ -529,21 +524,21 @@ ${{NWROOT}}/jobs/{}
         # change mode
         subprocess.call(["chmod", "a+x", outfile])
 
-        print("\nProcessed ecflow script %s" %outfile)
+        print("Processed ecflow script %s" %outfile)
 
 
 
     def write_ecf(self, slurm):
 
         sbatch_part = slurm.get_sbatch()
-        
+
         lines = """\n\n#%include <head.h>
-#%include <envir.h> 
+#%include <envir.h>
 
 # base name of model directory (i.e. storm)
-export model={}          
+export model={}
 
-# set to test during the initial testing phase, para when running 
+# set to test during the initial testing phase, para when running
 # in parallel (on a schedule), and prod in production
 export envir={}
 
@@ -555,14 +550,14 @@ export COMROOT={}
 # models restart/spinup files location
 export GESROOT={}
 
-# root directory for application, typically /nw$envir 
+# root directory for application, typically /nw$envir
 export NWROOT={}
 
 # unique job name (unique per day and environment), run_name
 export job=j{}
 export jobid=$job.$$
 
-# temp directory containing the working directory, often /tmpnwprd1 in production 
+# temp directory containing the working directory, often /tmpnwprd1 in production
 export DATAROOT={}
 
 # log directory and files
@@ -587,10 +582,10 @@ export jlogfile={}
 #
 ######################################################################
 #%end""".format(self.NET, self.envir, self.COMROOT, self.GESROOT,
-                self.NWROOT, self.RUN, self.DATAROOT, 
+                self.NWROOT, self.RUN, self.DATAROOT,
                 os.path.join(self.COMROOT, self.envir, "logs"),
                 self.jlogfile,
-                os.path.join(self.jjob_dir(),"J"+self.RUN.upper()), 
+                os.path.join(self.jjob_dir(),"J"+self.RUN.upper()),
                 self.RUN, now(2))
 
         outfile = os.path.join(self.ecf_dir(), "j"+self.RUN + ".ecf")
@@ -603,29 +598,29 @@ export jlogfile={}
         # change mode
         subprocess.call(["chmod", "a+x", outfile])
 
-        print("\nProcessed ecflow script %s" %outfile)
+        print("Processed ecflow script %s" %outfile)
 
 
 
 
     def write_jjob(self):
-    
-        lines="""#!/bin/sh 
- 
+
+        lines="""#!/bin/sh
+
 date
-export PS4=' $SECONDS + ' 
-set -x 
- 
+export PS4=' $SECONDS + '
+set -x
+
 export pgm="NWPS"
 export pgmout=OUTPUT.$$
- 
+
 export KEEPDATA="YES"     # TODO - to see
 
 PDY={}
 
-# temp location of the job working directory, typically $DATAROOT/$jobid 
+# temp location of the job working directory, typically $DATAROOT/$jobid
 export DATA=${{DATA:-${{DATAROOT:?}}/$jobid}}
-mkdir -p $DATA   
+mkdir -p $DATA
 cd $DATA
 
 ####################################
@@ -675,8 +670,8 @@ export GESOUT={}
 export GESIN={}
 
 # loop over nems.configure per model(alias), also must match run_name
-# COMIN com directory for current model's input data, typically $COMROOT/$NET/$envir/$RUN.$PDY 
-# COMINmodel com directory for incoming data from model model 
+# COMIN com directory for current model's input data, typically $COMROOT/$NET/$envir/$RUN.$PDY
+# COMINmodel com directory for incoming data from model model
 export COMINatm={}
 export COMINwave={}
 export COMINwavedata={}
@@ -709,24 +704,24 @@ date
 
 """.format(now(4), self.NET, self.job, self.NWROOT, self.fix_dir(), self.exec_dir(),
            self.source_dir(), self.parm_dir(), self.ush_dir(),
-	   self.COMOUT, self.GESOUT, self.GESIN, 
+	   self.COMOUT, self.GESOUT, self.GESIN,
            os.path.join(self.COMIN,"atm"),
 	   os.path.join(self.COMIN,"ww3"), os.path.join(self.COMIN,"ww3data"),
-	   os.path.join(self.COMIN,"adcirc"), os.path.join(self.COMIN,"atmesh"), 
-	   os.path.join(self.COMIN,"nwm"), os.path.join(self.script_dir(),"ex"+self.RUN+".sh"), 
+	   os.path.join(self.COMIN,"adcirc"), os.path.join(self.COMIN,"atmesh"),
+	   os.path.join(self.COMIN,"nwm"), os.path.join(self.script_dir(),"ex"+self.RUN+".sh"),
            self.job, self.DATAROOT)
- 
+
         outfile = os.path.join(self.jjob_dir(), "J"+self.RUN.upper())
         # running two storms at once, even for testing, overrides ecf files
         # p = self.storm_dir("job")
         # outfile = os.path.join(p, "J"+self.RUN.upper())
         with open(outfile, 'w') as fptr:
-            fptr.write(lines)   
+            fptr.write(lines)
 
         # change mode
         subprocess.call(["chmod", "a+x", outfile])
 
-        print("\nProcessed ecflow jjob script %s" %outfile)
+        print("Processed ecflow jjob script %s" %outfile)
 
 
         # create the script at the same time as jjob
@@ -740,45 +735,45 @@ date
         lines="""
 echo "============================================================="
 echo "=                                                            "
-echo "=         RUNNING NSEM FOR STORM: {}                        
-echo "=         RUN NAME: {}                              
+echo "=         RUNNING NSEM FOR STORM: {}
+echo "=         RUN NAME: {}
 echo "=                                                            "
 echo "============================================================="
 #
-python ${{USHnsem}}/{} 
+python ${{USHnsem}}/{}
 
 echo "{} completed"
 exit 0
 """.format(self.NET, self.RUN, self.RUN+".py", self.RUN)
-        
+
         with open(out, 'w') as fptr:
             fptr.write(lines)
 
         # change mode
         subprocess.call(["chmod", "a+x", out])
 
-        print("\nProcessed ecflow script %s" %out)
+        print("Processed ecflow script %s" %out)
 
 
 
     def write_jjob2(self):
-       
-        lines="""#!/bin/sh 
- 
+
+        lines="""#!/bin/sh
+
 date
-export PS4=' $SECONDS + ' 
-set -x 
- 
+export PS4=' $SECONDS + '
+set -x
+
 export pgm="NWPS"
 export pgmout=OUTPUT.$$
- 
+
 export KEEPDATA="YES"     # TODO - to see
 
 PDY="$(date +'%Y%m%d')"
 
-# temp location of the job working directory, typically $DATAROOT/$jobid 
+# temp location of the job working directory, typically $DATAROOT/$jobid
 export DATA=${{DATA:-${{DATAROOT:?}}/$jobid}}
-mkdir -p $DATA   
+mkdir -p $DATA
 cd $DATA
 
 ####################################
@@ -822,21 +817,21 @@ export SITETYPE=${{SITETYPE:-EMC}}
 # Define COM directory
 ##############################################
 # com directory for current model's output data, typically $COMROOT/$NET/$envir/$RUN.$PDY
-export COMOUT=${{COMROOT}}/${{envir}}/${{NET}}/{}.${{PDY}}
+export COMOUT=${{COMROOT}}/${{envir}}/${{NET}}/${{job}}.${{PDY}}
 # nwges directory for output guess fields; typically $GESROOT/$envir
-export GESOUT=${{GESROOT}}/${{envir}}/${{NET}}/{}.${{PDY}}
+export GESOUT=${{GESROOT}}/${{envir}}/nwgs/${{job}}.${{PDY}}
 # nwges directory for input guess fields; typically $GESROOT/$envir
-export GESIN=${{GESROOT}}/${{envir}}/${{NET}}/{}
+export GESIN=${{GESROOT}}/${{envir}}/nwgs
 
 
 # loop over nems.configure per model, also must match run_name
-# COMIN com directory for current model's input data, typically $COMROOT/$NET/$envir/$RUN.$PDY 
-# COMINmodel com directory for incoming data from model model 
-export COMINatm=${{COMROOT}}/${{NET}}/${{envir}}/${{job}}/atm
-export COMINwave=${{COMROOT}}/${{NET}}/${{envir}}/${{job}}/ww3
-export COMINadc=${{COMROOT}}/${{NET}}/${{envir}}/${{job}}/adcirc
-export COMINmeshdata=${{COMROOT}}/${{NET}}/${{envir}}/${{job}}/atmesh
-export COMINnwm=${{COMROOT}}/${{NET}}/${{envir}}/${{job}}/nwm
+# COMIN com directory for current model's input data, typically $COMROOT/$NET/$envir/$RUN.$PDY
+# COMINmodel com directory for incoming data from model model
+export COMINatm=${{COMROOT}}/${{envir}}/${{NET}}/atm
+export COMINwave=${{COMROOT}}/${{envir}}/${{NET}}/ww3
+export COMINadc=${{COMROOT}}/${{envir}}/${{NET}}/adcirc
+export COMINmeshdata=${{COMROOT}}/${{envir}}/${{NET}}/atmesh
+export COMINnwm=${{COMROOT}}/${{envir}}/${{NET}}/nwm
 
 mkdir -p $INPUTdir $RUNdir $TMPdir $LOGdir $COMOUT $GESOUT
 ##############################################
@@ -860,19 +855,19 @@ fi
 
 date
 
-""".format(self.RUN,self.RUN,self.RUN,self.RUN+".sh")
- 
+""".format(self.RUN+".sh")
+
         outfile = os.path.join(self.jjob_dir(), "J"+self.RUN.upper())
         # running two storms at once, even for testing, overrides ecf files
         # p = self.storm_dir("job")
         # outfile = os.path.join(p, "J"+self.RUN.upper())
         with open(outfile, 'w') as fptr:
-            fptr.write(lines)   
+            fptr.write(lines)
 
         # change mode
         subprocess.call(["chmod", "a+x", outfile])
 
-        print("\nProcessed ecflow jjob script %s" %outfile)
+        print("Processed ecflow jjob script %s" %outfile)
 
 
         # create the script at the same time as jjob
@@ -883,12 +878,21 @@ date
         if not found(p):
             print("Warrning - make sure to prepare the script!")
 
+        dash = len("===========================")
+        sblank = ""
+        for i in range(dash - len(self.NET)):
+            sblank += " "
+
+        dash = len("=========================================")
+        rblank = ""
+        for i in range(dash - len(self.RUN)):
+            rblank += " "
 
         lines="""
 echo "============================================================="
 echo "=                                                            "
-echo "=         RUNNING NSEM FOR STORM: {}                        
-echo "=         RUN NAME: {}                              
+echo "=         RUNNING NSEM FOR STORM: {}{}
+echo "=         RUN NAME: {}{}
 echo "=                                                            "
 echo "============================================================="
 #
@@ -896,7 +900,7 @@ python ${{USHnsem}}/{}
 
 echo "{} completed"
 exit 0
-""".format(self.NET, self.RUN, self.RUN+".py", self.RUN)
+""".format(self.NET, sblank + '"', self.RUN, rblank + '"', self.RUN+".py", self.RUN)
 
         with open(out, 'w') as fptr:
             fptr.write(lines)
@@ -904,7 +908,7 @@ exit 0
         # change mode
         subprocess.call(["chmod", "a+x", out])
 
-        print("\nProcessed ecflow script %s" %out)
+        print("Processed ecflow script %s" %out)
 
 
 
@@ -947,27 +951,26 @@ class NEMSModel:
 
 
 
-class NEMSConfig(NCOSystem):
+
+class NEMSConfig():
 
     """ processes nems.configure and model_configure file in PRJ_DIR """
 
-    def __init__(self, node, user_module):
+    def __init__(self, nco, node, user_module):
 
-        super().__init__(model, event, envir, run_name, DATAROOT, GESROOT)
-
+        self.nco = nco     # must be first to set
         self.node = node
         self.user_module = user_module
-
         self.read_nems_config()
-        self.read_model_config()    
+        self.read_model_config()
 
 
     def nems_config(self):
-        return os.path.join(self.source_dir(), 'nems.configure')
+        return os.path.join(self.nco.source_dir(), 'nems.configure')
 
 
     def model_config(self):
-        return os.path.join(self.source_dir(), 'model_configure')
+        return os.path.join(self.nco.source_dir(), 'model_configure')
 
 
     def node(self):
@@ -980,7 +983,7 @@ class NEMSConfig(NCOSystem):
 
     @user_module.setter
     def user_module(self, module):
-        self.__user_module = os.path.join(self.source_dir(),'modulefiles', self.node, module)
+        self.__user_module = os.path.join(self.nco.source_dir(),'modulefiles', self.node, module)
         return(self.__user_module)
 
 
@@ -994,9 +997,9 @@ class NEMSConfig(NCOSystem):
 
 
     def read_model_config(self):
-      
+
         model_cf = self.model_config()
-        print("\nReading NEMS config file %s" %model_cf)
+        print("Reading NEMS config file %s" %model_cf)
 
         try:
           with open(model_cf,'r') as fptr:
@@ -1022,16 +1025,15 @@ class NEMSConfig(NCOSystem):
         except Exception as e:
           print("\n%s" %str(e))
           sys.exit(-1)
-      
-        print("Finished reading NEMS config file %s" %model_cf)
+
         print("Runtime duration since: %s/%s/%s %s:%s:%s for %s hours" %(self.start_year,self.start_month,self.start_day,
                self.start_hour, self.start_minute, self.start_second, self.nhours_fcst))
 
 
     def get_duration(self):
-        date_time_str = "%s/%s/%s %s:%s:%s" %(self.start_day, self.start_month, self.start_year, 
+        date_time_str = "%s/%s/%s %s:%s:%s" %(self.start_day, self.start_month, self.start_year,
                                               self.start_hour, "00", "00")
-        self.start_date = datetime.datetime.strptime(date_time_str, '%d/%m/%Y %H:%M:%S') 
+        self.start_date = datetime.datetime.strptime(date_time_str, '%d/%m/%Y %H:%M:%S')
         self.start_date_str = date_time_str
         return self.start_date, self.start_date_str
 
@@ -1044,8 +1046,8 @@ class NEMSConfig(NCOSystem):
     def read_nems_config(self):
 
         nems_cf = self.nems_config()
-        print("\nReading NEMS config file %s" %nems_cf)
-         
+        print("Reading NEMS config file %s" %nems_cf)
+
         try:
           with open(nems_cf,'r') as fptr:
             cnt = 0; sentinel = '::'
@@ -1057,7 +1059,7 @@ class NEMSConfig(NCOSystem):
               if line.startswith(sentinel):
                 indx.append(cnt)
 
-            # cut each section of the file based on indx  
+            # cut each section of the file based on indx
             earth_list = []; model_list = []; seq_list = []
 
             earth_list = lines[:indx[0]]
@@ -1072,7 +1074,6 @@ class NEMSConfig(NCOSystem):
             print("\n%s" %str(e))
             sys.exit(-1)
 
-        print("Finished reading NEMS config file nems.configure")
 
 
 
@@ -1133,29 +1134,28 @@ class NEMSConfig(NCOSystem):
               line = lines[i]
             break
 
-          else:      
+          else:
             i += 1
-            line = lines[i]     
+            line = lines[i]
 
         print("Pocessed EARTH_component_list")
-        print(self.__dict__['EARTH_component_list'], "\n")
-
+        #print(self.__dict__['EARTH_component_list'], "\n")
 
 
     def process_model_section(self, model_lines):
 
       sentinel = '::'; cnt = 0
-      lines = [line.strip() for line in model_lines if len(line) > 2] 
+      lines = [line.strip() for line in model_lines if len(line) > 2]
       line = lines[cnt]
 
 
-      self.__dict__['NEMS_component_list'] = []    
+      self.__dict__['NEMS_component_list'] = []
       tmp = []       # array for holding many NEMSModel objects
       i = 0          # counter of number of models in EARTH_component_list
 
       while( i < len(self.__dict__['EARTH_component_list']) ):
           model = self.__dict__['EARTH_component_list'][i]
-          # print("Processing line %d, %s-%s, %d\n" %(cnt, line, model, i))
+          #print("Processing line %d, %s-%s, %d\n" %(cnt, line, model, i))
 
           if re.search(model+"_model", line, re.IGNORECASE) :   # do not use : becasue it might have space between!
               k,v = line.split(":")
@@ -1195,15 +1195,14 @@ class NEMSConfig(NCOSystem):
           else:
               cnt += 1   # lines with comment or extera
               line = lines[cnt]
-              
-                
+
+
 
       # update before breaking
       self.__dict__['NEMS_component_list'] = tmp
 
       print("Processed models_component_list")
-      self.print_model()
-      
+      #self.print_model()
 
 
 
@@ -1220,7 +1219,7 @@ class NEMSConfig(NCOSystem):
           vals = self.__dict__['runSeq']
           i += 1
           line = lines[i]
-          
+
           while line.find(sentinel) == -1:
             vals.append(line.strip())
             i += 1
@@ -1233,10 +1232,10 @@ class NEMSConfig(NCOSystem):
           line = lines[i]
 
       print("Processed runSeq")
-      print(self.__dict__['runSeq'],"\n")
+      #print(self.__dict__['runSeq'],"\n")
 
 
-class NEMSBuild(NEMSConfig):
+class NEMSBuild():
 
     """ This class creates a build script and copies the build file
         into PRJ_DIR, the same level as NEMS source location.
@@ -1249,35 +1248,35 @@ class NEMSBuild(NEMSConfig):
         <PRJ_DIR>/     maps to NCO variable ==> ${NWROOT}
            |--- nsem??                      ==> HOMEmodel (i.e. $NWROOT/model.v X.Y.Z)  TODO - do we need this level??
            |--- sorc/                       ==> sorc
-           |     |--- NEMS/   conf/   parm/   modulefiles/   model_configure  nems.configure  nems_env.sh  parm  
+           |     |--- NEMS/   conf/   parm/   modulefiles/   model_configure  nems.configure  nems_env.sh  parm
            |     |--- NWM/  WW3/  ADCIRC/  ATMESH/
            |     |--- esmf-impi-env.sh   build.sh   nems.job
-           |     |--- 
+           |     |---
            |     |---
            |--- ecf/   jobs/   scripts/   exec/*   fix/*   parm/*   /ush*
 
          All stared "*" directories have defined variables in NCO in the form of "VARmodel" (i.e. USHnsem, PARMnsem).
-         See files in jobs/ directory where these variables are set. 
+         See files in jobs/ directory where these variables are set.
     """
 
-   
-    def __init__(self, node, user_module):
 
-        super().__init__(node, user_module)   
+    def __init__(self, nems_cfg):
+
+        self.nems_cfg = nems_cfg
+        self.source_dir = self.nems_cfg.nco.source_dir()
 
         # we need the build.sh script to be available
         self.write_build()
-           
+
 
     def write_build(self):
 
-        source_dir = self.source_dir()
-        user_module = self.user_module
+        user_module = self.nems_cfg.user_module
+        nems_models = self.nems_cfg.nems_models
 
-        p = os.path.join(source_dir,'build.sh')
-        print("\nProcessing build script %s" %p)
- 
-        junk, modulefile = user_module.split(source_dir)
+        p = os.path.join(self.source_dir,'build.sh')
+
+        junk, modulefile = user_module.split(self.source_dir)
 
         lines = """#!/bin/bash\n
 # Description : Script to compile NSEModel NEMS application
@@ -1289,28 +1288,29 @@ class NEMSBuild(NEMSConfig):
 
 
 # load modules
-source {}   
+source {}
 
 cd NEMS\n""".format(now(2), modulefile[1:])    # remove the '/' from string
 
         lines += '\n#clean up\n'
-     
-        for model in self.nems_models():
+
+        for model in nems_models():
             alias = model.get_alias().upper()
-            if not exist(os.path.join(source_dir, alias)):
+            if not exist(os.path.join(self.source_dir, alias)):
                 print("\nDirectory %s not found!" %alias)
-          
+
             lines += 'make -f GNUmakefile distclean_' + \
-                      model.name + ' COMPONENTS=' + \
-                      '"' + model.name + '"\n'
-        
+                      alias + ' COMPONENTS=' + \
+                      '"' + alias + '"\n'
+
         lines += 'make -f GNUmakefile distclean_NEMS COMPONENTS="NEMS"\n'
 
         lines += '\n#make\n'
         lines += 'make -f GNUmakefile build COMPONENTS="'
 
-        for model in self.nems_models():
-            lines += model.name + ' '
+        for model in nems_models():
+            alias = model.get_alias().upper()
+            lines +=  alias+ ' '
         lines = lines[:-1] + '"\n'
 
         with open(p, 'w') as fptr:
@@ -1320,23 +1320,20 @@ cd NEMS\n""".format(now(2), modulefile[1:])    # remove the '/' from string
         subprocess.call(["chmod", "a+x", p])
 
 
-        # save 
-        self.build_script = p 
-
-        print("Finished processing build script file %s" %p)
+        # save
+        self.build_script = p
+        print("Processed build script %s" %p)
 
 
 
     def build_nems_app(self):
 
         try:
-            print("\nStart compiling ............\n")
+            print("Start compiling ............\n")
 
-            subprocess.run(['./build.sh'], cwd=self.source_dir(), check=True)
+            subprocess.run(['./build.sh'], cwd=self.source_dir, check=True)
         except subprocess.CalledProcessError as err:
             print('Error in executing build.sh: ', err)
-
-        print("Finished compiling ............\n")
 
 
 
@@ -1346,10 +1343,6 @@ class SlurmJob():
     # this class requires information from nems.configure,
     def __init__(self, **kwargs):
 
-        self.__dict__ = {'account':'coastal', 'queue':'test', 'error':'nems.error', 
-                         'jobname':'nems.job', 'time':420, 'output':'nems.out',
-                         'mailuser':'All', 'ntasks':780, 'nodes':34,'slurm_dir':'.' 
-                        }
         self.__dict__.update(**kwargs)
 
         if 'error' in kwargs:
@@ -1370,7 +1363,7 @@ class SlurmJob():
 
     def write_sbatch(self):
 
-        slurm_file = os.path.join(self.slurm_dir, self.jobname[1:])   # no j in this name, using this in standalone runs not in WCOSS
+        slurm_file = os.path.join(self.__dict__['slurm_dir'], self.jobname[1:])   # no j in this name, using this in standalone runs not in WCOSS
 
         sbatch_part = """#!/bin/sh -l\n
 #SBATCH -A {}
@@ -1383,23 +1376,23 @@ class SlurmJob():
 #SBATCH --ntasks-per-node={}
 #SBATCH -N {}
 #SBATCH --parsable
-#SBATCH -t {}""".format(self.account,self.queue,self.error,self.output,self.jobname,
-                        self.mailuser, self.ntasks, self.nodes, self.time)
+#SBATCH -t {}""".format(self.__dict__['account'], self.__dict__['queue'], self.error, self.output,self.jobname,
+                        self.__dict__['mailuser'], self.__dict__['ntasks'], self.__dict__['nnodes'], self.__dict__['time'])
 
         # for use by other classes
         self.sbatch_part = sbatch_part
 
         lines = """\n\n############################### main - to run: $sbatch {} ##########################
 set -x
-echo $SLURM_SUBMIT_DIR		# (in Slurm, jobs start in "current dir")   
-echo $SLURM_JOBID                                                     
+echo $SLURM_SUBMIT_DIR		# (in Slurm, jobs start in "current dir")
+echo $SLURM_JOBID
 echo $SLURM_JOB_NAME
-echo $SLURM_NNODES                                             
+echo $SLURM_NNODES
 echo $SLURM_TASKS_PER_NODE\n
 echo $SLURM_NODELIST		# give you the list of assigned nodes.\n
 echo 'STARTING THE JOB AT'
 date\n
-# change to absolute path of where you pulled the 
+# change to absolute path of where you pulled the
 # NEMS and NEMS Applications. use modules.nems becasue user's
 # modulefiles are copied into this with constant name.
 cp -fv {}/NEMS/exe/NEMS.x NEMS.x
@@ -1410,7 +1403,7 @@ date
 
         with open(slurm_file, 'w') as f:
             f.write(sbatch_part+lines)
-        print("\nWrot slurm job file %s" %slurm_file)
+        print("Processed slurm job file %s" %slurm_file)
 
 
 
@@ -1418,7 +1411,6 @@ class NEMSRun():
 
     # this class requires information from NCOSystem and SlurmJob
     def __init__(self, **kwargs):
-
         self.__dict__.update(**kwargs)  # TODO - add check that all args are in kwargs
 
 
@@ -1435,8 +1427,143 @@ class BlankLinesHelpFormatter (argparse.HelpFormatter):
         return lines
 
 
+def prep_nwm(dic):
+    """
+    check follwing files for configuration parameters and then copy
+    into $COMIN/nwm: setEnvar.sh, namelist.hrldas, hydro.namelist
+    pre-process the inputfiles located at ??? and ln into $COMIN/nwm
+    """
+    nwm_data_path = "/scratch2/COASTAL/coastal/save/COASTAL_ACT_NWC/NWM-v2.1/Data/assimilation"
+    domain = os.path.join(nwm_data_path,"domain","CONUS")
+    forcing = os.path.join(nwm_data_path,"forcing",dic['storm'])
+    slices = os.path.join(nwm_data_path,"nudgingTimeSliceObs",dic['storm'])
+    restart = os.path.join(nwm_data_path,"restart",dic['storm'])
+
+    p = dic['COMINnwm']
+    print("Preparing NWM input data in %s" %p )
+
+    if not exist(p):
+      try:
+        subprocess.run(['mkdir', '-pv', p ], check=True)
+      except subprocess.CalledProcessError as err:
+        print('Error preparing NWM: ', err)
+
+    dirs = [domain, forcing, slices, restart]
+    alias = ['DOMAIN', 'FORCING', 'nudgingTimeSliceObs', 'RESTART']
+    for dir, name in zip(dirs,alias):
+      if os.path.islink(os.path.join(p,name)) and os.path.exists(os.path.join(p,name)):
+        continue
+      else:
+        try:
+          subprocess.run(['ln', '-s', dir, name ], check=True, cwd=p)
+        except subprocess.CalledProcessError as err:
+          print('Error linking %s: ' %err)
+
+    files = ['namelist.hrldas', 'hydro.namelist', 'CHANPARM.TBL', 'GENPARM.TBL', 'HYDRO.TBL', 'MPTABLE.TBL', 'SOILPARM.TBL']
+    for f in files:
+      file = os.path.join(nwm_data_path, f)
+      try:
+        subprocess.run(['cp', file, '.' ], check=True, cwd=p)
+      except subprocess.CalledProcessError as err:
+        print('Error copying files %s: ' %err)
+
+
+
+def main(args=None):
+
+    # local variables from command lines or nsem_ini.py file
+    node = event = user_module_name = run_name = envir = ""
+    compile_flag = 0
+    slurm_args = {}
+
+    # get the input from the nsem_ini.py file
+    try:
+      print("Reading initialization file, nsem_ini.py .....")
+      node = ini.node
+      envir = ini.envir
+      event = ini.storm
+      user_module_name = ini.nems_user_module
+      run_name = ini.model_run
+      global PRJ_DIR
+      PRJ_DIR = ini.prj_dir   # "/scratch2/COASTAL/coastal/save/NAMED_STORMS/COASTAL_ACT"
+      global RUN_DIR
+      RUN_DIR = ini.run_dir   # "/scratch2/COASTAL/coastal/scrub/com/nsem"  # Note: nsem part of com dir!!
+      compile_flag = ini.compile_flag
+      slurm_args = ini.slurm_args
+    except:
+      print("\nError reading initialization file %s\n" %"nsem_ini.py")
+      sys.exit(0)
+
+    # these 3 to be verified for their final place 
+    DATAROOT = os.path.join("/tmp",event.lower())
+    GESROOT = RUN_DIR
+    model = "nsem"
+
+    if not exist(PRJ_DIR):
+      print("Project directory %s doesn't exist, please check and rerun the program\n" %PRJ_DIR)
+      sys.exit(-1)
+
+    # construct model input/output paths, if none exists
+    # or creates the none existing ones
+    print("\nConstructing NCO system directory structure .....")
+    nco = NCOSystem(event, envir, run_name, DATAROOT, GESROOT, model=model)
+    nco.setup_rundir()
+
+    # update the prj_dir for new storm event - TOO
+    # <prj_dir>/parm/<event> - to exists
+    # <prj_dir>/fix/meshes/<event>   hsofs  hsofs_elevated20m ??
+    # <prj_dir>/sorc/runupforecast.fd ??
+    nco.setup_prjdir()
+    source_dir = nco.source_dir()
+
+    # populate NEMS model class and process nems configure files
+    # needed for creation of build script
+    nems_cfg = NEMSConfig(nco, node, user_module_name)
+    ntasks = nems_cfg.get_num_tasks()
+    walltime = nems_cfg.get_fcst_hours()           # are they the same ??
+    start_date, start_date_str = nems_cfg.get_duration()
+
+
+    # compile the codes and submit the job to run
+    nems_build = NEMSBuild(nems_cfg)   # TODO pickle
+    if compile_flag:
+        nems_build.build_nems_app()
+
+
+    # SlurmJob needs update by reading nems.configure,
+    # update slurm_args
+    slurm_args['ntasks'] = ntasks
+    slurm_args['slurm_dir'] = source_dir
+    slurm = SlurmJob(**slurm_args)
+    slurm.write_sbatch()
+
+    # ecflow file constructions, requires info from both Slurm and NCO
+    nco.write_ecf2(slurm)
+    nco.write_jjob2()
+
+    # create a importable file of all the environments needed
+    nco.write_helper(nems_cfg)
+
+    dic = {'storm': event, 'COMINnwm': nco.COMINnwm}
+    prep_nwm(dic)
+    # cp NEMS.x /scratch2/COASTAL/coastal/scrub/com/nsem/para/florence
+    # cp model_configure nems.configure /scratch2/COASTAL/coastal/scrub/com/nsem/para/florence
+
+    # nems_run = NEMSRun(**run_args)
+
+    print("\n")
+
+
 
 if __name__ == '__main__':
+
+    # Beheen 9/24/2020 - I think this program at this stage of development, is reading nsem_ini.py and the model_configure and nems.configure!
+    # this needs to be revisited. Plan changed becasue modelers like to read from init file and not from command line!
+    # so adding all the init config into nsem_init and go from there. However, values for model_conf and nems.conf are not being included into
+    # nsem_ini yet.
+
+    main(args=None)
+    sys.exit(0)
 
     print("\n")  # this is to print nicer
     prog = sys.argv[0]
@@ -1446,17 +1573,17 @@ if __name__ == '__main__':
     usage += "       %s --region <region> --node <node> --event <event> --module <user_module> --runname <run_name> --prjdir <prj_dir> --rundir <run_dir>\n" %(prog)
     usage += "       %s -R <region> -n <node> -e <event> -u <user_module> -s <run_name> -p <prj_dir> -r <run_dir>\n" %(prog)
     usage += "./start_workflow.py -n hera -e shinnecock -u ESMF_NUOPC -s tide_spinup -p /scratch2/COASTAL/coastal/save/NAMED_STORMS/COASTAL_ACT -r /scratch2/COASTAL/coastal/scrub/com/nsem"
-    usage += Color.F_Default 
+    usage += Color.F_Default
 
     desc = '''This script builds one or more coupled models with NEMS and/or installs the system into a pre-defined location, ready to run.\n'''
     parser = argparse.ArgumentParser(prog=prog, usage=usage, add_help=True,
                                      formatter_class=BlankLinesHelpFormatter,
                                      description=desc, epilog='\n')
 
-    parser.add_argument('-p', '--prjdir', dest='prj_dir', type=str, default=PRJ_DIR,  
-                        help='''Compiles, links, and creates libraries from the models source files using the NEMS coupler. Location of the coupled system could be provided by the user, as long as the specified location complies with the expected structure. The default project directory is {}\n'''.format(PRJ_DIR)) 
-                                 
-    parser.add_argument('-r', '--rundir', dest='run_dir', type=str, default=RUN_DIR, 
+    parser.add_argument('-p', '--prjdir', dest='prj_dir', type=str, default=PRJ_DIR,
+                        help='''Compiles, links, and creates libraries from the models source files using the NEMS coupler. Location of the coupled system could be provided by the user, as long as the specified location complies with the expected structure. The default project directory is {}\n'''.format(PRJ_DIR))
+
+    parser.add_argument('-r', '--rundir', dest='run_dir', type=str, default=RUN_DIR,
                         help='''Model inputfiles and model runtime directory. The default run directory is {}\n'''.format(RUN_DIR))
 
     parser.add_argument('-R', '--region', dest='region_name', type=str, default="CONUS", help='CONUS or Gulf or Atlantic - modeling region. The default region is CONUS\n')
@@ -1472,16 +1599,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     print(len(sys.argv))
 
-    """ Currently these cases have been identified
-    'tide_baserun'        # Tide-only forecast run with ADCIRC
-    'best_track2ocn'      # Best-track ATMdata used to force live ADCIRC  
-    'wav&best_track2ocn'  # Best-track ATMdata and WAVdata used to force live ADCIRC  
-    'atm2ocn'             # ATMdata used to force live ADCIRC  
-    'wav2ocn'             # WAVdata used to force live ADCIRC  
-    'atm&wav2ocn'         # ATMdata and WAVdata used to force live ADCIRC  
-    'atm2wav2ocn'         # ATMdata used to force live ADCIRC and WW3 
-    """
-
     # local variables from comman lines
     region = node = event = user_module_name = run_name = ""
 
@@ -1493,6 +1610,10 @@ if __name__ == '__main__':
     run_name = args.run_name
     RUN_DIR = args.run_dir    # update - Note: add the nsem as part of rundir
     PRJ_DIR = args.prj_dir    # update
+    # if decided to use command line, use above and adjust main() accordingly.
+
+
+
     DATAROOT = os.path.join("/tmp",event.lower())
     GESROOT = os.path.join(RUN_DIR,"nwgs")
     envir = "para"
@@ -1516,7 +1637,7 @@ if __name__ == '__main__':
 
     # populate NEMS model class and process nems configure files
     # needed for creation of build script
-    nems_cfg = NEMSConfig(node, user_module_name)  # superclass to NEMSBuild 
+    nems_cfg = NEMSConfig(node, user_module_name)  # superclass to NEMSBuild
     ntasks = nems_cfg.get_num_tasks()
     walltime = nems_cfg.get_fcst_hours()           # are they the same ??
     start_date, start_date_str = nems_cfg.get_duration()
@@ -1528,7 +1649,7 @@ if __name__ == '__main__':
         nems_build.build_nems_app()
 
 
-    # SlurmJob needs update by reading nems.configure, 
+    # SlurmJob needs update by reading nems.configure,
     slurm_args = {'account':'coastal','ntasks':ntasks,'nnodes':'34','queue':'test',
                   'time':walltime,'jobname':run_name,'error':run_name,
                   'output':run_name,'mailuser':'??', 'slurm_dir': source_dir
@@ -1551,7 +1672,7 @@ if __name__ == '__main__':
     # The scratch directory with the model runs is:
     # /scratch2/NCEPDEV/stmp1/Andre.VanderWesthuysen/data
     # /scratch2/NCEPDEV/stmp1/Andre.VanderWesthuysen/data/shinnecock.atm2wav2ocn.20200528
-    # Root directory for application, typically /nw$envir 
+    # Root directory for application, typically /nw$envir
     # After the jnsem_post.ecf job is complete, the *.nc output is put in the following directory:
     # /scratch2/NCEPDEV/stmp1/Andre.VanderWesthuysen/data/com/nsem/para/shinnecock.atm2wav2ocn.20200528
 
@@ -1566,7 +1687,7 @@ We would all need to agree that COM is the standard location for all inputs/outp
 We discussed this one on our previous call. We don't strictly need to do this in our operational workflow, since we can run subsets of the NEMS app without changing the NEMS.x, as Saeed pointed out. This is also not typically done in NCO operations, since it takes a bit of time. This is of course different from our regression testing, where the code needs to be compiled each time we go through the CI workflow. This is part of the compsets we have in our old VLab version of our app, and it still needs to be brought over to our Git version.
 
 9) How did you produce the jjob file? It seems that there are many variables that need to be updated per unique run?
-The jjob file is a standard template constructed manually. The runtime variables that need to be updated come from the env variables such as $STORM and $RUN_TYPE. Are there others you can think of that we need to incorporate? 
+The jjob file is a standard template constructed manually. The runtime variables that need to be updated come from the env variables such as $STORM and $RUN_TYPE. Are there others you can think of that we need to incorporate?
 
 I didn't use ww3data to test the coupled app/workflow. However, I did maintain the functionality in the workflow for the cases where we want to use it (e.g. get stand-alone ADCIRC results). For this, you need to set COMINwavdata to the ww3data/ folder in COM, and use the RUN_TYPE = atm&wav2ocn. But this won't be our main "happy path" user story.
 """

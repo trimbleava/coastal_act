@@ -2,10 +2,6 @@
 
 # stdandard libs
 import logging
-# os, sys, time, subprocess, logging
-#from datetime import datetime, timedelta
-#from dateutil.parser import parser
-#from string import Template
 
 # third party libs
 
@@ -13,17 +9,16 @@ import logging
 import nsem_env as env
 import nsem_utils as util
 import nsem_prep as prep
-import nsem_ini as ini
 
 
 logger = logging.getLogger(env.jlogfile)
 
-def setvars(storm, tide_spin_sdate, nems_sdate, tide_spin_edate, nems_edate):
+def setvars(tide_spin_sdate, nems_sdate, tide_spin_edate, nems_edate):
     # To prepare a clod start ADCIRC-Only run for spining-up the tide 
     dic = {
 
       'Ver': 'v2.0',
-      'RunName': 'ocn_spinup_' + storm,
+      'RunName': 'ocn_spinup_' + env.storm,
 
       # inp files
       'fetch_hot_from': None,
@@ -71,25 +66,32 @@ def main():
     msg = "\n%s: Setting up %s for storm %s .........." %(__file__, env.run, env.storm)
     print(util.colory("blue", msg))
 
+    ini_data = prep.read_ini()
+    print(init_data)
+    sys.exit(0)
+
+    msg = "\nCalculating spinup time ....."
+    print(util.colory("red", msg))
     tide_spin_sdate,tide_spin_edate, _, _, nems_sdate, nems_edate, = prep.spinup_time()
 
     # To prepare a clod start ADCIRC-Only run for spining-up the tide 
-    dic = setvars(env.storm,tide_spin_sdate,tide_spin_edate,nems_sdate,nems_edate) 
-
-    # prep atm data
-    msg = "\nPreparing ATM data files ....."
+    msg = "\nSetting model variables ....."
     print(util.colory("red", msg))
-    adc_atm_data(env.storm,"hwrf")
+    dic = setvars(tide_spin_sdate,tide_spin_edate,nems_sdate,nems_edate) 
 
-    msg = "\nPreparing ADCIRC configuration files ....."
+    msg = "\nPreprocessing NWM input files ....."
     print(util.colory("red", msg))
-    prep.prep_adc(dic)
+    prep.prep_nwm()
 
     msg = "\nPreparing NEMS configuration files ....."
     print(util.colory("red", msg))
-    prep.prep_nems(dic)
+    prep.prep_nems()
 
-    msg = "\nFinished preparing data for NSEM %s\n" %(env.run)
+    msg = "\nStart running model for %s\n" %(env.run)
+    print(util.colory("red", msg))
+    # add the run portion
+
+    msg = "\nFinished the model run .....\n"
     print(util.colory("blue", msg))
 
 

@@ -1,3 +1,4 @@
+# Beheen - This file is automatically created from running start_workflow.py
 # To Use - import this into your python script as follow:
 # import nsem_env
 
@@ -5,6 +6,7 @@ import sys, os
 
 
 RUNdir = os.getenv('RUNdir')
+PRJdir = os.getenv('NWROOT')
 EXECnsem = os.getenv('EXECnsem')
 PARMnsem = os.getenv('PARMnsem')
 FIXnsem = os.getenv('FIXnsem')
@@ -15,17 +17,24 @@ COMINatm = os.getenv('COMINatm')
 COMINwave = os.getenv('COMINww3')
 COMINwavdata = os.getenv('COMINww3data')
 COMINadc = os.getenv('COMINadc')
+COMINnwm = os.getenv('COMINnwm')
 jlogfile = os.getenv('jlogfile')
 
 storm = os.getenv('STORM')
 run = os.getenv('RUN_TYPE')
 
-start_date_str = "04/09/2008 12:00:00"
-frcst_hrs = 36
+start_date_str = "04/09/2008 06:00:00"
+frcst_hrs = 72
+
+if storm:
+    pass
+else:
+    print("\nEnvironment is not set! Please source 'nsem_export.sh' file and re run the program\n")
+    sys.exit(-1)
 
 sys.path.append(USHnsem)
 
 print("\n")
-print("Logfile: /scratch2/COASTAL/coastal/scrub/com/nsem/para/logs/jlogfile.tide_spinup")
+print("Logfile: /scratch2/COASTAL/coastal/scrub/com/nsem2/para/logs/jlogfile.nwm_test2")
 print("\n")
 
