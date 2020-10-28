@@ -70,15 +70,17 @@ Assumptions:
    Hera    - is the user computer, machine name              - <COMPUTER>
    rdhpcs  - is the computing system where hera is a node of - <COMPUTING>
    intel   - is the compiler of choice in hera computer      - <COMPILER>
-   ROOTDIR - is the directory of your choice in hera where you
-             clone the NEMS in
+   ROOTDIR - is the directory of your choice in hera where you clone
+             the NEMS and any other models that participate in coupling. 
 
 cd ROOTDIR
 
 1) git clone --recursive https://github.com/moghimis/ADC-WW3-NWM-NEMS
-2) mkdir conf 
-3) mkdir modulefiles
-4) mkdir modulefiles/<COMPUTER>
+   Note: the above creates a ADC-WW3-NWM-NEMS directory. So, mv or copy
+         all the contents into ROOTDIR to follow.
+2) mkdir conf                                                     -- if it doesn't exist 
+3) mkdir modulefiles                                              -- if it doesn't exist
+4) mkdir modulefiles/<COMPUTER>                                   -- if it doesn't exist
 5) vi modulefiles/<COMPUTER>/ESMF_NUOPC                           -- see TABLE 1
 6) vi conf/configure.nems.<COMPUTER>.<COMPILER>                   -- see TABLE 2 
 7) mkdir NEMS/src/incmake/env/<COMPUTING>                         -- if it doesn't exist
@@ -97,7 +99,7 @@ TABLE 0 depicts above steps in form of tree structure
 
 ************************************************************************************
 Below instrutions show how to add a new model for the coupling with other models and
-how to compile and integrate with the NEMS framwork.
+how to compile and integrate with the NEMS framwork, in more details.
 ************************************************************************************
 
 NEMS is designed to work with different earth system models developed in variety
@@ -115,7 +117,8 @@ Assumptions:
    Hera    - is the user computer, machine name
    rdhpcs  - is the computing system where hera is a node of
    intel   - is the compiler of choice in hera computer with the version of interest
-   ROOTDIR - is the directory of your choice in hera
+   ROOTDIR - is the directory of your choice in hera where individual models including 
+             NEMS is cloned or copied to. (i.e. NEMS, NWM, ADCIRC, WW3 source codes)
 
 1) cd <ROOTDIR>
 
@@ -126,7 +129,7 @@ Assumptions:
       The above command only gets the NEMS code from the official repository.
 
       Or get the development (a.k.a dev) version of the NEMS code to follow
-      the instruction easier.
+      the instruction easier (i.e. step b, below)
 
    b) git clone --recursive https://github.com/moghimis/ADC-WW3-NWM-NEMS
    
@@ -144,6 +147,9 @@ Assumptions:
 
       After the first clone, you should use "git pull" command to access 
       the latest changes from dev repo.
+
+      Note: copy or move all the contents from ADC-WW3-NWM-NEMS directory
+            to ROOTDIR.
 
    For user who used 2a), contents are put into TABLEs and they are located
    at the end of instructions. 
@@ -169,7 +175,7 @@ Assumptions:
 
     b) mkdir modulefiles/hera           --  this should match the machine name 
 
-    c) vi modulefiles/hera/ESMF_NUOPC   --  could be any name 
+    c) vi modulefiles/hera/ESMF_NUOPC   --  ESMF_NUOPC module file name could be any name you like 
 
        Note: This file is to set the compilation  environments for this version of  NEMS and
              ESMF and all the participant coupled models. Examples are MPI libraries, NETCDF, 
