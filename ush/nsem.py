@@ -13,9 +13,6 @@ import shutil
 # local libs
 from color import Color, Formatting, Base, ANSI_Compatible
 
-# globals - updated during reading command line
-PRJ_DIR = Path(os.path.dirname(os.path.abspath(__file__))).parent
-RUN_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def now(frmt=1):
@@ -32,6 +29,51 @@ def now(frmt=1):
         now = now.strftime("%Y%m%d")
 
     return now
+
+
+# example = '2018-06-29 08:15:27'
+"""
+def daterange(start_date, end_date):
+    for n in range(int((end_date - start_date).days)):
+        yield start_date + timedelta(n)
+
+start_date = date(2013, 1, 1)
+end_date = date(2015, 6, 2)
+for single_date in daterange(start_date, end_date):
+    print(single_date.strftime("%Y-%m-%d"))
+"""
+
+def dateloop_byday(start_date, tot_day):
+
+    # start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d %H:%M:%S')
+
+    for n in range(tot_day):
+        yield start_date + datetime.timedelta(n)
+
+
+
+def dateloop_byhour(start_date_str, duration_hours):
+    
+    hour_count = duration_hours
+    start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d %H:%M:%S')
+
+    for n in range(hour_count):
+        yield start_date + datetime.timedelta(n)
+
+
+# TODO - test this
+def to_date(date_str,frmt):
+
+    if frmt == 1:
+        return datetime.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
+    elif frmt == 2:
+        return datetime.datetime.strptime(date_str,"%b. %d, %Y")
+    elif frmt == 3:
+        return datetime.datetime.strptime(date_str).ctime()
+    elif frmt == 4:
+        return datetime.datetime.strptime(date_str,"%Y%m%d")
+
+
 
 
 def exist(path):
@@ -1016,9 +1058,9 @@ start_minute:            {}
 start_second:            {}
 nhours_fcst:             {}
 """.format(now(frmt=3), 
-           mc['total_member:'], mc['PE_MEMBER01:'], mc['start_year:'],mc['start_month:'],
-           mc['start_day:'], mc['start_hour:'],mc['start_minute:'],mc['start_second:'],
-           mc['nhours_fcst:'])       
+           mc['total_member'], mc['PE_MEMBER01'], mc['start_year'],mc['start_month'],
+           mc['start_day'], mc['start_hour'],mc['start_minute'],mc['start_second'],
+           mc['nhours_fcst'])       
         except OSError as err:
           print("\nError on 'model_configure' values in initialization file - {0}\n".format(err))
           sys.exit(0)
@@ -1035,30 +1077,30 @@ nhours_fcst:             {}
         nems_cf = self.nems_config()
         print("Writing NEMS config file %s" %nems_cf)
 
-        earth_comp = nc['EARTH_component_list:']
+        earth_comp = nc['EARTH_component_list']
         earth_str = " ".join([i.strip() for i in earth_comp])
 
-        atm_model = nc['ATM_model:']
+        atm_model = nc['ATM_model']
         atm_str, atm_pet = atm_model
         atm_start, atm_end = atm_pet
         atm_pet_str = str(atm_start) + " " + str(atm_end)
 
-        ocn_model = nc['OCN_model:']
+        ocn_model = nc['OCN_model']
         ocn_str, ocn_pet = ocn_model
         ocn_start, ocn_end = ocn_pet
         ocn_pet_str = str(ocn_start) + " " + str(ocn_end)
 
-        wav_model = nc['WAV_model:'] 
+        wav_model = nc['WAV_model'] 
         wav_str, wav_pet = wav_model
         wav_start, wav_end = wav_pet
         wav_pet_str = str(wav_start) + " " + str(wav_end)
 
-        nwm_model = nc['NWM_model:']
+        nwm_model = nc['NWM_model']
         nwm_str, nwm_pet = nwm_model
         nwm_start, nwm_end = nwm_pet
         nwm_pet_str = str(nwm_start) + " " + str(nwm_end)
 
-        run_seq = nc['runSeq::']['coupling_interval_sec']
+        run_seq = nc['runSeq']['coupling_interval_sec']
 
 
 
@@ -1376,6 +1418,7 @@ runSeq::
       print(self.__dict__['runSeq'],"\n")
 
 
+
 class NEMSBuild():
 
     """ This class creates a build script and copies the build file
@@ -1565,49 +1608,8 @@ class BlankLinesHelpFormatter (argparse.HelpFormatter):
         if text.endswith('\n'):
             lines += ['']
         return lines
-
-
-def prep_nwm(dic):
-    """
-    check follwing files for configuration parameters and then copy
-    into $COMIN/nwm: setEnvar.sh, namelist.hrldas, hydro.namelist
-    pre-process the inputfiles located at ??? and ln into $COMIN/nwm
-    """
-    nwm_data_path = "/scratch2/COASTAL/coastal/save/COASTAL_ACT_NWC/NWM-v2.1/Data/assimilation"
-    domain = os.path.join(nwm_data_path,"domain","CONUS")
-    forcing = os.path.join(nwm_data_path,"forcing",dic['storm'])
-    slices = os.path.join(nwm_data_path,"nudgingTimeSliceObs",dic['storm'])
-    restart = os.path.join(nwm_data_path,"restart",dic['storm'])
-
-    p = dic['COMINnwm']
-    print("Preparing NWM input data in %s" %p )
-
-    if not exist(p):
-      try:
-        subprocess.run(['mkdir', '-pv', p ], check=True)
-      except subprocess.CalledProcessError as err:
-        print('Error preparing NWM: ', err)
-
-    dirs = [domain, forcing, slices, restart]
-    alias = ['DOMAIN', 'FORCING', 'nudgingTimeSliceObs', 'RESTART']
-    for dir, name in zip(dirs,alias):
-      if os.path.islink(os.path.join(p,name)) and os.path.exists(os.path.join(p,name)):
-        continue
-      else:
-        try:
-          subprocess.run(['ln', '-s', dir, name ], check=True, cwd=p)
-        except subprocess.CalledProcessError as err:
-          print('Error linking %s: ' %err)
-
-    files = ['namelist.hrldas', 'hydro.namelist', 'CHANPARM.TBL', 'GENPARM.TBL', 'HYDRO.TBL', 'MPTABLE.TBL', 'SOILPARM.TBL']
-    for f in files:
-      file = os.path.join(nwm_data_path, f)
-      try:
-        subprocess.run(['cp', file, '.' ], check=True, cwd=p)
-      except subprocess.CalledProcessError as err:
-        print('Error copying files %s: ' %err)
-
-
+    
+# ............................................... nsem_workflow ............................................
 
 def import_initfile(filename):
 
@@ -1673,7 +1675,7 @@ def nsem_workflow(args=None):
     nco.setup_prjdir()
     return nco, ini
 
-
+# ............................................... nsem_workflow ............................................
 
 def git_nsem(repo, nco_sorc_dir):
     
@@ -1716,9 +1718,9 @@ def setup_libs():
 
 def build_nsem(args=None):
 
-    nco, ini = nsem_workflow(args)        # all models and nems and nems configs should be located in this dir
+    nco, ini = nsem_workflow(args)
 
-    sorc_dir = nco.source_dir()
+    sorc_dir = nco.source_dir()           # all models and nems and nems configs should be located in this dir
 
     # git nsem models + nems from repo 
     # conda install  gitpython
@@ -1775,9 +1777,169 @@ def build_nsem(args=None):
     # create a importable file of all the environments needed
     nco.write_helper(nems_cf)
 
-    sys.exit(0)
-    dic = {'storm': event, 'COMINnwm': nco.COMINnwm}
-    prep_nwm(dic)
+
+
+"""
+def daterange(start_date, end_date):
+    for n in range(int((end_date - start_date).days)):
+        yield start_date + timedelta(n)
+
+start_date = date(2013, 1, 1)
+end_date = date(2015, 6, 2)
+for single_date in daterange(start_date, end_date):
+    print(single_date.strftime("%Y-%m-%d"))
+"""
+
+class NWM():
+    def __init__(self, ini, start_date_str, duration_hours):
+
+
+        self.start_date_str = start_date_str        # yyyy-mm-dd hh:mm:ss
+        self.duration_hours = duration_hours        
+        self.data_path = ini.NWM['nwm_data_path']
+        self.domain = ini.NWM['domain']
+        self.domain_files = ini.NWM['domain_files']
+        self.forcing_files = ini.NWM['forcing_files'] 
+
+        self.duration_day = int(self.duration_hours / 24)  
+        self.start_date = to_date(start_date_str, 1)
+        for this_date in dateloop_byday(self.start_date, self.duration_day):
+            print(this_date.strftime("%Y-%m-%d "))
+           
+        self.restart_files = ini.NWM['restart_files']
+        self.discharge_obs_files = ini.NWM['nudgingTimeSliceObs_files']
+        self.config_files = ini.NWM['config_files']
+        self.table_files = ini.NWM['table_files']
+
+
+    def check_files(self, ini):
+        
+        dateloop_byday(self.start_date, self.duration)
+
+        msg = Color.F_Red + "\nFollowing not found:"
+        nwm_domain = [os.path.join(self.data_path, "domain", self.domain.capitalize(), f) for f in self.domain_files] 
+        for f in nwm_domain:
+            if not os.path.isfile(f):
+               msg += "\n" + f
+
+        # 2016100822.LDASIN_DOMAIN1
+        nwm_forcing = [os.path.join(self.data_path, "forcing", f) for f in self.forcing_files]
+        for f in nwm_forcing:
+            if not os.path.isfile(f):
+               msg += "\n" + f
+    
+    
+
+        slices = [os.path.join(self.data_path, "nudgingTimeSliceObs", f) for f in self.discharge_obs_files]
+        restart = [os.path.join(self.data_path, "restart", f) for f in self.restart_files]
+        namelists = [os.path.join(self.data_path, f) for f in self.config_files]
+        tables = [os.path.join(self.data_path, f) for f in self.table_files]
+
+        msg += Color.F_Default
+        print(msg)
+
+
+def prep_all(ini):
+    print("\nPreparing data for all models...")
+
+
+
+def prep_nwm(ini, start_date_str, duration_hours):
+    
+    """prepares and move the data to the runtime location, also creates a
+    python module of the same for alternative use with other scripts.  """
+
+    print("\nPreparing data for NWM ...")
+   
+    nwm_obj = NWM(ini, start_date_str, duration_hours)
+    nwm_obj.check_files(ini)
+ 
+    """
+    p = dic['COMINnwm']
+    print("Preparing NWM input data in %s" %p )
+
+    if not exist(p):
+      try:
+        subprocess.run(['mkdir', '-pv', p ], check=True)
+      except subprocess.CalledProcessError as err:
+        print('Error preparing NWM: ', err)
+
+    dirs = [domain, forcing, slices, restart]
+    alias = ['DOMAIN', 'FORCING', 'nudgingTimeSliceObs', 'RESTART']
+    for dir, name in zip(dirs,alias):
+      if os.path.islink(os.path.join(p,name)) and os.path.exists(os.path.join(p,name)):
+        continue
+      else:
+        try:
+          subprocess.run(['ln', '-s', dir, name ], check=True, cwd=p)
+        except subprocess.CalledProcessError as err:
+          print('Error linking %s: ' %err)
+
+    files = ['namelist.hrldas', 'hydro.namelist', 'CHANPARM.TBL', 'GENPARM.TBL', 'HYDRO.TBL', 'MPTABLE.TBL', 'SOILPARM.TBL']
+    for f in files:
+      file = os.path.join(nwm_data_path, f)
+      try:
+        subprocess.run(['cp', file, '.' ], check=True, cwd=p)
+      except subprocess.CalledProcessError as err:
+        print('Error copying files %s: ' %err)
+
+    """
+
+
+
+def nsem_prep(args=None):
+
+    print("\nPreparing NSEM models data ...")
+  
+    # below variables are common to all models
+    nco, ini = nsem_workflow(args)
+    sorc_dir = nco.source_dir()
+
+    # trying to make the functions as independent as 
+    # possible without much of performance hit, so
+    # not calling previous subprocess, where possible.
+    s_year = ini.model_configure['start_year']
+    s_month = ini.model_configure['start_month']
+    s_day = ini.model_configure['start_day']
+    s_hour = ini.model_configure['start_hour']
+    s_min = ini.model_configure['start_minute']
+    s_sec = ini.model_configure['start_second']
+    tot_hrs = ini.model_configure['nhours_fcst'] 
+    start_date_str = '{}-{}-{} {}:{}:{}'.format(s_year,s_month,s_day,s_hour,s_min.s_sec)
+    """
+    repo = ini.repository
+    dest_repo = os.path.join(sorc_dir, Path(repo).name)    # where we clone nsem models + nems in sorc_dir
+
+    node = ini.node
+    nems = ini.nems
+    user_module = nems['user_module']
+    mc = ini.model_configure
+    nems_cf = NEMSConfig(dest_repo, node, user_module)
+    try:
+        nems_cf.read_model_config()
+    except:
+        print("\nError in reading NEMS model_configure")
+        sys.exit(0)
+    
+    start_date, start_date_str = nems_cf.get_duration()
+    """
+
+    if not args.nwm and not args.adc and not args.ww3 and not args.ww3data and not args.atm and not args.atmesh:
+        prep_all(ini)
+    if args.nwm:
+        prep_nwm(ini, start_date_str, tot_hrs)
+    if args.adc:
+        prep_nwm(ini)
+    if args.ww3:
+       prep_nwm(ini)
+    if args.ww3data:
+       prep_nwm(ini)
+    if args.atm:
+       prep_nwm(ini)
+    if args.atmesh:
+       prep_nwm(ini)
+    
+
     # cp NEMS.x /scratch2/COASTAL/coastal/scrub/com/nsem/para/florence
     # cp model_configure nems.configure /scratch2/COASTAL/coastal/scrub/com/nsem/para/florence
 
@@ -1805,6 +1967,17 @@ if __name__ == '__main__':
     build_install = subp.add_parser("build", help="buils and installs NSEM models with NEMS")
     build_install.add_argument("--ini", help="an init python file with prepopulated values", default="nsem_ini.py")
     build_install.set_defaults(func=build_nsem)
+  
+
+    prep_data = subp.add_parser("prep", help="prepares NSEM models input files")
+    prep_data.add_argument("--ini", help="an init python file with prepopulated values", default="nsem_ini.py")
+    prep_data.add_argument("--nwm", action='store_true', help="prepares data for the NWM")
+    prep_data.add_argument("--adc", action='store_true', help="prepares data for the ADCIRC")
+    prep_data.add_argument("--ww3", action='store_true', help="prepares data for the WW3")
+    prep_data.add_argument("--atmesh", action='store_true', help="prepares data for the ATMesh")
+    prep_data.add_argument("--atm", action='store_true', help="prepares data for the ATM")
+    prep_data.add_argument("--ww3data", action='store_true', help="prepares data for the WW3Data")
+    prep_data.set_defaults(func=nsem_prep)
   
 
     args = parser.parse_args()

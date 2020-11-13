@@ -1,103 +1,57 @@
 #!/usr/bin/env python
 
-# stdandard libs
-import logging
+"""
+File Name   : main.py
+Description : NSEM main program - for managability main redirects subprocesses into their respective function
+Usage       : conda activate A_PYTHON_ENV and then python main -h to see the usage per subprocess
+Date        : 7/6/2020
+Contacts    : Coastal Act Team 
+              ali.abdolali@noaa.gov, saeed.moghimi@noaa.gov, beheen.m.trimble@gmail.com, andre.vanderwesthuysen@noaa.gov
+"""
 
-# third party libs
+# standard libs
+import  os, sys
+import argparse
 
-# user defined libs
-import nsem_env as env
-import nsem_utils as util
-import nsem_prep as prep
-
-
-logger = logging.getLogger(env.jlogfile)
-
-def setvars(tide_spin_sdate, nems_sdate, tide_spin_edate, nems_edate):
-    # To prepare a clod start ADCIRC-Only run for spining-up the tide 
-    dic = {
-
-      'Ver': 'v2.0',
-      'RunName': 'ocn_spinup_' + env.storm,
-
-      # inp files
-      'fetch_hot_from': None,
-      'fort15_temp': 'fort.15.template.tide_spinup',
-
-      # time
-      'start_date': tide_spin_sdate,
-      'start_date_nems': nems_sdate,
-      'end_date': tide_spin_edate,
-      'dt': 2.0,
-      'ndays':  (tide_spin_edate - tide_spin_sdate).total_seconds() / 86400.,   # duration in days
-
-      # fort15 op
-      'ndays_ramp': 5,
-      'nws': 0,         # no wave no atm
-      'ihot': 0,        # no hot start
-      'hot_ndt_out': (tide_spin_edate - tide_spin_sdate).total_seconds() / 86400. * 86400 /2.0,
-
-      # NEMS settings
-      'nems_configure': 'nems.configure.ocn.IN',
-      'model_configure': 'atm_namelist.rc.template',
-      'ocn_name': 'adcirc',
-      'ocn_petlist': '0 383',
-      'coupling_interval_sec': 3600
-    }
+# local libs
+import func_nsem_build    as fbn
+import func_nsem_prep     as fnp
+import func_nsem_workflow as fnw
+import nsem_utils         as nus
 
 
-    msg = """\nStart spinup tide: {}
-End spinup tide  : {}
-Spinup duration(days): {} 
-Hotstart output time(days): {}
-Start forecast date: {}
-End forecast date  : {}""".format(dic['start_date'], dic['end_date'], dic['ndays'],
-                                  dic['hot_ndt_out'], nems_sdate, nems_edate)
-
-    print(msg)
-
-    return dic
-
-
-
-
-def main():
-
-    msg = "\n%s: Setting up %s for storm %s .........." %(__file__, env.run, env.storm)
-    print(util.colory("blue", msg))
-
-    ini_data = prep.read_ini()
-    print(init_data)
-    sys.exit(0)
-
-    msg = "\nCalculating spinup time ....."
-    print(util.colory("red", msg))
-    tide_spin_sdate,tide_spin_edate, _, _, nems_sdate, nems_edate, = prep.spinup_time()
-
-    # To prepare a clod start ADCIRC-Only run for spining-up the tide 
-    msg = "\nSetting model variables ....."
-    print(util.colory("red", msg))
-    dic = setvars(tide_spin_sdate,tide_spin_edate,nems_sdate,nems_edate) 
-
-    msg = "\nPreprocessing NWM input files ....."
-    print(util.colory("red", msg))
-    prep.prep_nwm()
-
-    msg = "\nPreparing NEMS configuration files ....."
-    print(util.colory("red", msg))
-    prep.prep_nems()
-
-    msg = "\nStart running model for %s\n" %(env.run)
-    print(util.colory("red", msg))
-    # add the run portion
-
-    msg = "\nFinished the model run .....\n"
-    print(util.colory("blue", msg))
-
-
- 
 
 if __name__ == '__main__':
 
-    main()
+    usage = "%s --help | -h \n"  %sys.argv[0]
+    print(nus.colory("red",usage))
+   
+
+    parser = argparse.ArgumentParser()
+    subp = parser.add_subparsers()
+   
+    nco = subp.add_parser("workflow", help="reads an initialization file and construct the NSEM workflow")
+    nco.add_argument("--ini", help="an init python file with prepopulated values", default="nsem_ini.py")
+    nco.set_defaults(func=fnw.nsem_workflow)
+    
+
+    build_install = subp.add_parser("build", help="buils and installs NSEM models with NEMS")
+    build_install.add_argument("--ini", help="an init python file with prepopulated values", default="nsem_ini.py")
+    build_install.set_defaults(func=fbn.nsem_build)
+  
+
+    prep_data = subp.add_parser("prep", help="prepares NSEM models input files")
+    prep_data.add_argument("--ini", help="an init python file with prepopulated values", default="nsem_ini.py")
+    prep_data.add_argument("--nwm", action='store_true', help="prepares data for the NWM")
+    prep_data.add_argument("--adc", action='store_true', help="prepares data for the ADCIRC")
+    prep_data.add_argument("--ww3", action='store_true', help="prepares data for the WW3")
+    prep_data.add_argument("--atmesh", action='store_true', help="prepares data for the ATMesh")
+    prep_data.add_argument("--atm", action='store_true', help="prepares data for the ATM")
+    prep_data.add_argument("--ww3data", action='store_true', help="prepares data for the WW3Data")
+    prep_data.set_defaults(func=fnp.nsem_prep)
+  
+
+    args = parser.parse_args()
+    print(args)
+    args.func(args)
 
